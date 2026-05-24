@@ -1,0 +1,6 @@
+CMD
+cd "C:\Users\angel\OneDrive\Python Projects\CRM\crm-universitario"
+
+npm run dev
+
+http://localhost:3000
