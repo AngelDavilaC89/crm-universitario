@@ -120,7 +120,7 @@ export default async function GlobalSeguimientosPage({
             
             const leadInfo = leadsMap.get(seg.idLead);
             const nombreLead = leadInfo?.prospecto || "Lead Desconocido";
-            const campusLead = leadInfo?.campus || "Sin campus";
+            const campusLead = leadInfo?.campusInteres || "Sin campus";
             const carreraLead = leadInfo?.carrera || "Sin carrera";
             const turnoLead = leadInfo?.turno || "Sin turno";
             
