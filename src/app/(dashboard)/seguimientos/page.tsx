@@ -15,8 +15,13 @@ export default async function GlobalSeguimientosPage({
   const role = session.user.role;
   const email = session.user.email;
 
-  // Obtener todos los seguimientos
-  const todosSeguimientos = await googleSheets.getAllSeguimientos();
+  // Obtener todos los seguimientos y leads al mismo tiempo
+  const [todosSeguimientos, todosLeads] = await Promise.all([
+    googleSheets.getAllSeguimientos(),
+    googleSheets.getLeads()
+  ]);
+
+  const leadsMap = new Map(todosLeads.map(l => [l.idLead, l]));
 
   // Await searchParams
   const resolvedParams = await searchParams;
@@ -113,30 +118,49 @@ export default async function GlobalSeguimientosPage({
             // Insignia de resultado
             const isPositivo = seg.resultado?.toLowerCase().includes('interesado') || seg.resultado?.toLowerCase().includes('cita');
             
+            const leadInfo = leadsMap.get(seg.idLead);
+            const nombreLead = leadInfo?.prospecto || "Lead Desconocido";
+            const campusLead = leadInfo?.campus || "Sin campus";
+            const carreraLead = leadInfo?.carrera || "Sin carrera";
+            const turnoLead = leadInfo?.turno || "Sin turno";
+            
             return (
               <div key={idx} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 hover:shadow-xl hover:border-blue-100 transition-all duration-300 group flex flex-col h-full">
                 
-                {/* Header de la Tarjeta */}
+                {/* Header de la Tarjeta (Info del Lead) */}
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-2xl ${iconBg} shadow-sm`}>
+                    <div className={`p-3 rounded-2xl ${iconBg} shadow-sm shrink-0`}>
                       <Icon className="w-5 h-5" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-slate-800 text-lg">{seg.tipoContacto || "Interacción"}</h3>
-                      <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <span>{seg.fecha || "Fecha desconocida"}</span>
+                      <h3 className="font-bold text-slate-800 text-lg leading-tight line-clamp-1" title={nombreLead}>
+                        {nombreLead}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 mt-1">
+                        <span className="font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-md">{campusLead}</span>
+                        <span>•</span>
+                        <span>{carreraLead}</span>
+                        <span>•</span>
+                        <span>{turnoLead}</span>
                       </div>
                     </div>
                   </div>
                   
                   <Link 
                     href={`/leads/${seg.idLead}`}
-                    className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors"
+                    className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-50 text-slate-400 group-hover:bg-blue-600 group-hover:text-white transition-colors shrink-0 ml-2"
                     title="Ver detalle del prospecto"
                   >
                     <ArrowRight className="w-5 h-5" />
                   </Link>
+                </div>
+                
+                {/* Metadatos de la Interacción */}
+                <div className="flex items-center gap-2 mb-3 px-1 text-sm text-slate-500">
+                  <span className="font-medium text-slate-700">{seg.tipoContacto || "Interacción"}</span>
+                  <span>el</span>
+                  <span>{seg.fecha || "Fecha desconocida"}</span>
                 </div>
 
                 {/* Comentario */}
