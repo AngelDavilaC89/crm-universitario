@@ -3,6 +3,9 @@ import { authOptions } from "@/lib/auth";
 import { googleSheets } from "@/lib/google-sheets";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // Helper para parsear la fecha de seguimiento "DD/MM/YYYY HH:MM:SS" a Date
 function parseSeguimientoDate(dateStr: string) {
   if (!dateStr) return null;
