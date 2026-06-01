@@ -1,10 +1,14 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { googleSheets } from "@/lib/google-sheets";
-import { Users } from "lucide-react";
+import { Users, Search } from "lucide-react";
 import { GrupoCard } from "@/components/grupos/GrupoCard";
 
-export default async function GruposPage() {
+export default async function GruposPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const session = await getServerSession(authOptions);
   if (!session) return null;
 
@@ -14,10 +18,21 @@ export default async function GruposPage() {
   // Obtener inscritos
   const inscritos = await googleSheets.getInscritos();
 
+  const resolvedParams = await searchParams;
+  const searchQuery = resolvedParams.q?.toLowerCase() || "";
+
   // Filtrar por campus si es "Campus" o "Asesor"
-  const inscritosFiltrados = (role === "Campus" || role === "Asesor") 
+  let inscritosFiltrados = (role === "Campus" || role === "Asesor") 
     ? inscritos.filter(i => i.campus === campus)
     : inscritos;
+
+  // Búsqueda profunda en los inscritos que formarán los grupos
+  if (searchQuery) {
+    inscritosFiltrados = inscritosFiltrados.filter(inscrito => {
+      const valores = Object.values(inscrito).map(v => String(v).toLowerCase());
+      return valores.some(v => v.includes(searchQuery));
+    });
+  }
 
   // Agrupar por la llave única: Campus + Año + Periodo + Carrera + Modalidad + Turno
   const gruposMap = new Map<string, any>();
@@ -57,6 +72,19 @@ export default async function GruposPage() {
         <p className="text-slate-500 mt-1">
           Un grupo se apertura automáticamente al alcanzar <span className="font-bold text-slate-700">8 alumnos inscritos</span> que coincidan en Campus, Año, Periodo, Carrera, Modalidad y Turno.
         </p>
+      </div>
+
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <form className="flex w-full md:w-auto relative">
+          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            name="q"
+            defaultValue={searchQuery}
+            placeholder="Buscar en grupos..."
+            className="w-full sm:w-80 pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-900"
+          />
+        </form>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

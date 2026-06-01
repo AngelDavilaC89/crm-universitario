@@ -1,10 +1,14 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { googleSheets } from "@/lib/google-sheets";
-import { MessageSquareText, Phone, Calendar, ArrowRight, User, Mail, Activity, CheckCircle2, AlertCircle } from "lucide-react";
+import { MessageSquareText, Phone, Calendar, ArrowRight, User, Mail, Activity, CheckCircle2, AlertCircle, Search } from "lucide-react";
 import Link from "next/link";
 
-export default async function GlobalSeguimientosPage() {
+export default async function GlobalSeguimientosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const session = await getServerSession(authOptions);
   if (!session) return null;
 
@@ -14,10 +18,22 @@ export default async function GlobalSeguimientosPage() {
   // Obtener todos los seguimientos
   const todosSeguimientos = await googleSheets.getAllSeguimientos();
 
+  // Await searchParams
+  const resolvedParams = await searchParams;
+  const searchQuery = resolvedParams.q?.toLowerCase() || "";
+
   // Filtrar si es asesor
-  const seguimientos = role === "Asesor" 
+  let seguimientos = role === "Asesor" 
     ? todosSeguimientos.filter(s => s.asesor?.toLowerCase() === email?.toLowerCase())
     : todosSeguimientos;
+
+  // Filtrar por búsqueda profunda
+  if (searchQuery) {
+    seguimientos = seguimientos.filter(seg => {
+      const valores = Object.values(seg).map(v => String(v).toLowerCase());
+      return valores.some(v => v.includes(searchQuery));
+    });
+  }
 
   // Estadísticas rápidas
   const totalLlamadas = seguimientos.filter(s => s.tipoContacto === 'Llamada').length;
@@ -60,6 +76,20 @@ export default async function GlobalSeguimientosPage() {
             <div className="text-3xl font-bold text-purple-100">{totalCitas}</div>
           </div>
         </div>
+      </div>
+
+      {/* Buscador */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <form className="flex w-full md:w-auto relative">
+          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            name="q"
+            defaultValue={searchQuery}
+            placeholder="Buscar en seguimientos..."
+            className="w-full sm:w-80 pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-900"
+          />
+        </form>
       </div>
 
       {/* Grid de Seguimientos */}

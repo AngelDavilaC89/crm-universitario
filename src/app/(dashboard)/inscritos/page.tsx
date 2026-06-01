@@ -1,13 +1,13 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { googleSheets } from "@/lib/google-sheets";
-import { GraduationCap, MapPin, BookOpen, CheckCircle, XCircle } from "lucide-react";
+import { GraduationCap, MapPin, BookOpen, CheckCircle, XCircle, Search } from "lucide-react";
 import { EditInscritoModal } from "@/components/inscritos/EditInscritoModal";
 
 export default async function InscritosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ año?: string; periodo?: string; campus?: string }>;
+  searchParams: Promise<{ año?: string; periodo?: string; campus?: string; q?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   if (!session) return null;
@@ -19,6 +19,7 @@ export default async function InscritosPage({
   const filterYear = resolvedParams.año || "Todos";
   const filterPeriod = resolvedParams.periodo || "Todos";
   const filterCampus = resolvedParams.campus || (role === "Campus" ? userCampus : "Todos");
+  const searchQuery = resolvedParams.q?.toLowerCase() || "";
 
   // Obtener inscritos
   const todosInscritos = await googleSheets.getInscritos();
@@ -40,7 +41,14 @@ export default async function InscritosPage({
     const periodMatch = filterPeriod === "Todos" || inscrito.periodo === filterPeriod;
     const campusMatch = filterCampus === "Todos" || inscrito.campus === filterCampus;
 
-    return yearMatch && periodMatch && campusMatch;
+    // Búsqueda profunda
+    let searchMatch = true;
+    if (searchQuery) {
+      const valores = Object.values(inscrito).map(v => String(v).toLowerCase());
+      searchMatch = valores.some(v => v.includes(searchQuery));
+    }
+
+    return yearMatch && periodMatch && campusMatch && searchMatch;
   });
 
   return (
@@ -55,6 +63,16 @@ export default async function InscritosPage({
         </div>
 
         <form className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <div className="relative">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              name="q"
+              defaultValue={searchQuery}
+              placeholder="Buscar en inscritos..."
+              className="w-full sm:w-64 pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none shadow-sm text-slate-900"
+            />
+          </div>
           {(role === "Dirección" || role === "Marketing") && (
             <select name="campus" defaultValue={filterCampus} className="px-4 py-2 border border-slate-200 rounded-xl bg-white shadow-sm text-slate-900 outline-none focus:ring-2 focus:ring-green-500">
               <option value="Todos">Todos los Campus</option>

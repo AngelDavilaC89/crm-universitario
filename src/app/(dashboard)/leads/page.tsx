@@ -46,10 +46,9 @@ export default async function LeadsPage({
     // Filtro por búsqueda de texto (Nombre, ID, o Correo)
     let searchMatch = true;
     if (searchQuery) {
-      const prospecto = (lead.prospecto || "").toLowerCase();
-      const correo = (lead.correo || "").toLowerCase();
-      const celular = (lead.celular || "").toLowerCase();
-      searchMatch = prospecto.includes(searchQuery) || correo.includes(searchQuery) || celular.includes(searchQuery);
+      // Búsqueda profunda en todos los campos
+      const valores = Object.values(lead).map(v => String(v).toLowerCase());
+      searchMatch = valores.some(v => v.includes(searchQuery));
     }
 
     return añoMatch && periodoMatch && searchMatch;
@@ -66,7 +65,8 @@ export default async function LeadsPage({
             <input
               type="text"
               name="q"
-              placeholder="Buscar prospecto..."
+              defaultValue={searchQuery}
+              placeholder="Buscar en todo el lead..."
               className="w-full sm:w-64 pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-900"
             />
           </div>
