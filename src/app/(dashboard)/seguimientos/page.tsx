@@ -35,7 +35,15 @@ export default async function GlobalSeguimientosPage({
   // Filtrar por búsqueda profunda
   if (searchQuery) {
     seguimientos = seguimientos.filter(seg => {
-      const valores = Object.values(seg).map(v => String(v).toLowerCase());
+      const leadInfo = leadsMap.get(seg.idLead);
+      const valores = [
+        ...Object.values(seg),
+        leadInfo?.prospecto || "",
+        leadInfo?.campusInteres || "",
+        leadInfo?.carrera || "",
+        leadInfo?.turno || ""
+      ].map(v => String(v).toLowerCase());
+      
       return valores.some(v => v.includes(searchQuery));
     });
   }

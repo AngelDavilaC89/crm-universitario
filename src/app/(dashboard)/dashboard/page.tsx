@@ -61,10 +61,24 @@ export default async function DashboardPage() {
     if (!lead.idLead) return;
     
     // El ID tiene el formato L-1717381234567
+    let timestampRegistro = NaN;
     const parts = lead.idLead.split('-');
-    if (parts.length !== 2) return;
+    if (parts.length === 2) {
+      timestampRegistro = parseInt(parts[1]);
+    }
     
-    const timestampRegistro = parseInt(parts[1]);
+    // Fallback retroactivo: Si no hay timestamp válido en el ID (leads viejos), usar la columna 'fecha'
+    if (isNaN(timestampRegistro) || timestampRegistro < 1000000000) {
+      if (lead.fecha) {
+        const dParts = lead.fecha.split('/');
+        if (dParts.length === 3) {
+          // Asumimos las 09:00 AM del día de registro por defecto
+          const fallbackDate = new Date(parseInt(dParts[2]), parseInt(dParts[1]) - 1, parseInt(dParts[0]), 9, 0, 0);
+          timestampRegistro = fallbackDate.getTime();
+        }
+      }
+    }
+
     if (isNaN(timestampRegistro)) return;
 
     const fechaPrimerContacto = primerSeguimientoPorLead.get(lead.idLead);
