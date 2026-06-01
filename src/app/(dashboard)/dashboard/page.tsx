@@ -86,10 +86,9 @@ export default async function DashboardPage() {
 
     const diffMs = fechaPrimerContacto.getTime() - timestampRegistro;
     
-    // Ignorar si la diferencia es negativa (error en fechas o datos manuales viejos)
-    if (diffMs < 0) return;
-
-    const diffHoras = diffMs / (1000 * 60 * 60);
+    // Usar valor absoluto en caso de que un asesor haya registrado el seguimiento
+    // manualmente con una fecha u hora anterior a la de creación del lead.
+    const diffHoras = Math.abs(diffMs) / (1000 * 60 * 60);
     
     totalHoras += diffHoras;
     conteo++;
