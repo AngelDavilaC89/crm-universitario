@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Users, AlertCircle, CheckCircle2, X, GraduationCap, Calendar, MapPin, BookOpen, Edit2, Loader2, Check } from "lucide-react";
+import { Users, AlertCircle, CheckCircle2, X, GraduationCap, Calendar, MapPin, BookOpen, Edit2, Loader2, Check, PhoneCall } from "lucide-react";
 import { completarInscripcion } from "@/app/actions/completarInscripcion";
+import { registrarLlamadaCalidadAction } from "@/app/actions/llamadaCalidadAction";
 
 export function GrupoCard({ grupo }: { grupo: any }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<string | null>(null);
+  const [qualityCallStudent, setQualityCallStudent] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleCompletar = async (formData: FormData) => {
@@ -14,6 +16,17 @@ export function GrupoCard({ grupo }: { grupo: any }) {
       const res = await completarInscripcion(formData);
       if (res.success) {
         setEditingStudent(null);
+      } else {
+        alert(res.error || "Ocurrió un error");
+      }
+    });
+  };
+
+  const handleLlamadaCalidad = async (formData: FormData) => {
+    startTransition(async () => {
+      const res = await registrarLlamadaCalidadAction(formData);
+      if (res.success) {
+        setQualityCallStudent(null);
       } else {
         alert(res.error || "Ocurrió un error");
       }
@@ -169,6 +182,8 @@ export function GrupoCard({ grupo }: { grupo: any }) {
                   const isPreInscrito = alumno.statusLead === 'Pre-inscrito';
                   const isInscrito = alumno.statusLead === 'Inscrito';
                   const isEditing = editingStudent === alumno.idLead;
+                  const isCalidadPending = isPreInscrito && alumno.llamadaCalidad !== 'Confirmado';
+                  const isCalling = qualityCallStudent === alumno.idLead;
 
                   return (
                     <div key={index} className="flex flex-col rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all overflow-hidden">
@@ -185,9 +200,14 @@ export function GrupoCard({ grupo }: { grupo: any }) {
                                   <Check className="w-3 h-3" /> Inscrito
                                 </span>
                               )}
-                              {isPreInscrito && (
-                                <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                                  Pre-inscrito
+                              {isPreInscrito && !isCalidadPending && (
+                                <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                                  <Check className="w-3 h-3" /> Confirmado
+                                </span>
+                              )}
+                              {isPreInscrito && isCalidadPending && (
+                                <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                                  Pendiente Calidad
                                 </span>
                               )}
                             </div>
@@ -202,15 +222,37 @@ export function GrupoCard({ grupo }: { grupo: any }) {
                             Por: {alumno.asesor?.split('@')[0]}
                           </span>
                           
-                          {isPreInscrito && !isEditing && (
+                          {/* Mostrar Botón de Llamada de Calidad si está pendiente */}
+                          {isCalidadPending && !isCalling && (
+                            <button 
+                              onClick={() => setQualityCallStudent(alumno.idLead)}
+                              className="flex items-center gap-1 text-xs font-medium text-amber-600 hover:text-amber-800 transition-colors bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded-lg border border-amber-200"
+                            >
+                              <PhoneCall className="w-3 h-3" />
+                              Llamada de Calidad
+                            </button>
+                          )}
+
+                          {isCalling && (
+                            <button 
+                              onClick={() => setQualityCallStudent(null)}
+                              className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+
+                          {/* Mostrar Lápiz de Cobranza SÓLO si ya pasó el filtro de calidad */}
+                          {isPreInscrito && !isCalidadPending && !isEditing && (
                             <button 
                               onClick={() => setEditingStudent(alumno.idLead)}
-                              className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg"
+                              className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg border border-blue-200"
                             >
                               <Edit2 className="w-3 h-3" />
                               Completar Pago
                             </button>
                           )}
+                          
                           {isEditing && (
                             <button 
                               onClick={() => setEditingStudent(null)}
@@ -221,6 +263,45 @@ export function GrupoCard({ grupo }: { grupo: any }) {
                           )}
                         </div>
                       </div>
+
+                      {/* Formulario de Llamada de Calidad */}
+                      {isCalling && (
+                        <div className="p-4 bg-amber-50/50 border-t border-amber-100">
+                          <form action={handleLlamadaCalidad} className="space-y-4">
+                            <input type="hidden" name="idLead" value={alumno.idLead} />
+                            
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-2">Resultado de la Llamada de Calidad</label>
+                              <select 
+                                required
+                                name="decision"
+                                className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm text-slate-800 mb-3"
+                              >
+                                <option value="Confirmado">✅ Confirma Asistencia (Continuar a pago)</option>
+                                <option value="Declinó">❌ Decide no continuar</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-medium text-slate-700 mb-1">Motivo / Notas (Opcional si confirmó, Obligatorio si declinó)</label>
+                              <input 
+                                type="text" 
+                                name="motivo"
+                                placeholder="Ej. No alcanzó a juntar el dinero..."
+                                className="w-full px-3 py-2 bg-white border border-amber-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm text-slate-800"
+                              />
+                            </div>
+
+                            <button 
+                              type="submit"
+                              disabled={isPending}
+                              className="w-full flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-medium py-2 rounded-lg transition-all text-sm"
+                            >
+                              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Guardar Decisión"}
+                            </button>
+                          </form>
+                        </div>
+                      )}
 
                       {/* Formulario Desplegable */}
                       {isEditing && (

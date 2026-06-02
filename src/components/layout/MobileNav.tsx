@@ -8,7 +8,8 @@ import {
   Users, 
   MessageSquareText, 
   GraduationCap, 
-  BookOpenCheck
+  BookOpenCheck,
+  Frown
 } from "lucide-react";
 
 export function MobileNav() {
@@ -47,6 +48,12 @@ export function MobileNav() {
       icon: BookOpenCheck,
       href: "/grupos",
       show: ["Dirección", "Marketing", "Campus", "Asesor"].includes(role),
+    },
+    {
+      label: "Bajas",
+      icon: Frown,
+      href: "/bajas",
+      show: true,
     },
   ];
 

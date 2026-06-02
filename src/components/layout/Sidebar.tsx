@@ -10,7 +10,8 @@ import {
   MessageSquareText, 
   GraduationCap, 
   BookOpenCheck,
-  Building2
+  Building2,
+  Frown
 } from "lucide-react";
 
 export function Sidebar() {
@@ -55,6 +56,12 @@ export function Sidebar() {
       icon: BookOpenCheck,
       href: "/grupos",
       show: ["Dirección", "Marketing", "Campus", "Asesor"].includes(role),
+    },
+    {
+      label: "Bajas",
+      icon: Frown,
+      href: "/bajas",
+      show: true,
     },
   ];
 

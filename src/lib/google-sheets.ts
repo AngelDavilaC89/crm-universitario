@@ -77,7 +77,8 @@ export class GoogleSheetsService {
       montoColegiatura: row.get('Monto Colegiatura'),
       turnoAsignado: row.get('Turno Asignado'),
       carreraAsignada: row.get('Carrera Asignada'),
-      statusColegiatura: row.get('Status Colegiatura')
+      statusColegiatura: row.get('Status Colegiatura'),
+      llamadaCalidad: row.get('Llamada de Calidad')
     }));
   }
 
@@ -242,6 +243,33 @@ export class GoogleSheetsService {
       row.set('Folio de Pago Colegiatura', data.folioColegiatura);
       row.set('Monto Colegiatura', data.montoColegiatura);
       row.set('Status Colegiatura', data.statusColegiatura);
+      
+      await row.save();
+      return true;
+    }
+    return false;
+  }
+
+  // Llamada de Calidad (Gate antes de pagar Colegiatura)
+  async registrarLlamadaCalidad(idLead: string, data: any) {
+    await this.init();
+    const sheet = this.doc.sheetsByTitle['Leads'];
+    if (!sheet) return false;
+
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.get('ID Lead') === idLead);
+    
+    if (row) {
+      if (data.decision === 'Confirmado') {
+        row.set('Llamada de Calidad', 'Confirmado');
+      } else {
+        row.set('Llamada de Calidad', 'Declinó');
+        row.set('Status Lead', 'Baja de Calidad');
+        row.set('Status Colegiatura', data.motivo); // Guardamos el motivo aquí para reutilizar
+      }
+      
+      row.set('Fecha de última actualización', new Date().toLocaleDateString('es-MX'));
       
       await row.save();
       return true;
