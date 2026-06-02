@@ -8,7 +8,7 @@ import { parseSeguimientoDate } from "@/lib/date-utils";
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ año?: string; periodo?: string; q?: string; sla?: string }>;
+  searchParams: Promise<{ año?: string; periodo?: string; q?: string; sla?: string; pending?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   if (!session) return null;
@@ -25,6 +25,7 @@ export default async function LeadsPage({
   const currentPeriod = resolvedParams.periodo || "Todos";
   const searchQuery = resolvedParams.q?.toLowerCase() || "";
   const slaFilter = resolvedParams.sla || null;
+  const pendingFilter = resolvedParams.pending || null;
 
   // Obtener leads desde Google Sheets
   const [allLeads, allSeguimientos] = await Promise.all([
@@ -32,9 +33,9 @@ export default async function LeadsPage({
     googleSheets.getAllSeguimientos()
   ]);
 
-  // Si hay filtro de SLA, pre-calcular el primer seguimiento de cada lead
+  // Si hay filtro de SLA o Pending, pre-calcular el primer seguimiento de cada lead
   const primerSeguimientoPorLead = new Map<string, Date>();
-  if (slaFilter) {
+  if (slaFilter || pendingFilter) {
     allSeguimientos.forEach(seg => {
       if (!seg.idLead || !seg.fecha) return;
       const fechaSeg = parseSeguimientoDate(seg.fecha);
@@ -73,7 +74,7 @@ export default async function LeadsPage({
     
     // Filtro por SLA
     let slaMatch = true;
-    if (slaFilter) {
+    if (slaFilter || pendingFilter) {
       slaMatch = false; // Por defecto no coincide si hay filtro
       
       let timestampRegistro = NaN;
@@ -93,7 +94,8 @@ export default async function LeadsPage({
         
         if (!isNaN(timestampRegistro)) {
           const fechaPrimerContacto = primerSeguimientoPorLead.get(lead.idLead);
-          if (fechaPrimerContacto) {
+          
+          if (slaFilter && fechaPrimerContacto) {
             const diffMs = fechaPrimerContacto.getTime() - timestampRegistro;
             const diffHoras = Math.abs(diffMs) / (1000 * 60 * 60);
             
@@ -104,6 +106,15 @@ export default async function LeadsPage({
               else if (slaFilter === "4-a-24-horas" && diffHoras > 4 && diffHoras <= 24) slaMatch = true;
               else if (slaFilter === "mas-1-dia" && diffHoras > 24) slaMatch = true;
             }
+          } else if (pendingFilter && !fechaPrimerContacto) {
+            const now = Date.now();
+            const diffMsPending = now - timestampRegistro;
+            const diffHorasPending = diffMsPending / (1000 * 60 * 60);
+            const horasValidas = diffHorasPending < 0 ? 0 : diffHorasPending;
+            
+            if (pendingFilter === "menos-24-horas" && horasValidas < 24) slaMatch = true;
+            else if (pendingFilter === "1-a-3-dias" && horasValidas >= 24 && horasValidas <= 24 * 3) slaMatch = true;
+            else if (pendingFilter === "mas-3-dias" && horasValidas > 24 * 3) slaMatch = true;
           }
         }
       }

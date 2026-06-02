@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { googleSheets } from "@/lib/google-sheets";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
+import { DashboardPendingCharts } from "@/components/dashboard/DashboardPendingCharts";
 import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 import { parseSeguimientoDate } from "@/lib/date-utils";
 
@@ -63,6 +64,14 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   let de4A24Horas = 0;  // 4 - 24 h
   let masDe1Dia = 0;    // > 24 h
 
+  // Contadores para "Sin Seguimiento"
+  let pendientesTotal = 0;
+  let pendientesMenos24h = 0;
+  let pendientes1a3Dias = 0;
+  let pendientesMas3Dias = 0;
+
+  const now = Date.now();
+
   leads.forEach(lead => {
     if (!lead.idLead) return;
     
@@ -88,8 +97,27 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     if (isNaN(timestampRegistro)) return;
 
     const fechaPrimerContacto = primerSeguimientoPorLead.get(lead.idLead);
-    if (!fechaPrimerContacto) return; // Aún no ha sido contactado
+    
+    // Si NO ha sido contactado, es un prospecto Pendiente
+    if (!fechaPrimerContacto) {
+      pendientesTotal++;
+      const diffMsPending = now - timestampRegistro;
+      const diffHorasPending = diffMsPending / (1000 * 60 * 60);
+      
+      // Puede ser negativo si registraron manual con fecha a futuro, asumimos 0
+      const horasValidas = diffHorasPending < 0 ? 0 : diffHorasPending;
+      
+      if (horasValidas < 24) {
+        pendientesMenos24h++;
+      } else if (horasValidas <= 24 * 3) {
+        pendientes1a3Dias++;
+      } else {
+        pendientesMas3Dias++;
+      }
+      return; 
+    }
 
+    // SI ha sido contactado, calculamos SLA
     const diffMs = fechaPrimerContacto.getTime() - timestampRegistro;
     
     // Usar valor absoluto en caso de que un asesor haya registrado el seguimiento
@@ -122,6 +150,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     { name: "> 1 día", count: masDe1Dia, color: "#ef4444" }, // red-500
   ];
 
+  const pendingChartData = [
+    { name: "< 24 horas", count: pendientesMenos24h, color: "#eab308" }, // yellow-500
+    { name: "1 a 3 días", count: pendientes1a3Dias, color: "#f97316" }, // orange-500
+    { name: "> 3 días", count: pendientesMas3Dias, color: "#ef4444" }, // red-500
+  ];
+
   return (
     <div className="space-y-6">
       <div className="max-w-4xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -152,8 +186,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         </div>
       </div>
 
-      <div className="max-w-4xl">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
         <DashboardCharts data={chartData} averageHours={averageHours} />
+        <DashboardPendingCharts data={pendingChartData} totalPending={pendientesTotal} />
       </div>
     </div>
   );
