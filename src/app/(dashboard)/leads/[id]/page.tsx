@@ -98,15 +98,15 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
           )}
 
           {/* Botón para abrir Pre-inscripción */}
-          <div className="px-6 pb-6">
-            {(lead.statusLead === 'Nuevo lead' || lead.statusLead === 'En Seguimiento' || !lead.statusLead) ? (
+          <div className="px-6 pb-6 pt-4 border-t border-slate-100">
+            {(!lead.statusLead || lead.statusLead.toLowerCase() === 'nuevo lead' || lead.statusLead.toLowerCase() === 'en seguimiento') ? (
               <Link
                 href={`/leads/${idLead}/pre-inscribir`}
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold shadow-sm transition-all text-sm"
               >
                 Pre-inscribir Prospecto
               </Link>
-            ) : lead.statusLead === 'Pre-inscrito' ? (
+            ) : lead.statusLead.toLowerCase() === 'pre-inscrito' ? (
               <div className="w-full text-center py-3 bg-slate-50 text-slate-500 rounded-xl font-medium text-sm border border-slate-200">
                 Prospecto Pre-inscrito. Para completar inscripción ve a Grupos.
               </div>
