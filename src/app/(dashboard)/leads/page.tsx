@@ -53,8 +53,7 @@ export default async function LeadsPage({
     // Filtro por rol
     let roleMatch = false;
     if (role === "Dirección" || role === "Marketing") roleMatch = true;
-    else if (role === "Campus") roleMatch = lead.campusInteres === campus;
-    else if (role === "Asesor") roleMatch = lead.asesor?.toLowerCase() === email?.toLowerCase();
+    else if (role === "Campus" || role === "Asesor") roleMatch = lead.campusInteres === campus;
     
     if (!roleMatch) return false;
 
@@ -161,7 +160,7 @@ export default async function LeadsPage({
           </button>
         </form>
 
-        {["Dirección", "Marketing", "Campus"].includes(role) && (
+        {["Dirección", "Marketing", "Campus", "Asesor"].includes(role) && (
           <Link
             href="/leads/nuevo"
             className="flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm transition-colors justify-center"

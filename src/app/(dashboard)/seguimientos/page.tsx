@@ -27,10 +27,16 @@ export default async function GlobalSeguimientosPage({
   const resolvedParams = await searchParams;
   const searchQuery = resolvedParams.q?.toLowerCase() || "";
 
-  // Filtrar si es asesor
-  let seguimientos = role === "Asesor" 
-    ? todosSeguimientos.filter(s => s.asesor?.toLowerCase() === email?.toLowerCase())
-    : todosSeguimientos;
+  // Filtrar si es asesor o campus
+  let seguimientos = todosSeguimientos;
+  
+  if (role === "Campus" || role === "Asesor") {
+    const userCampus = session.user.campus;
+    seguimientos = todosSeguimientos.filter(s => {
+      const leadInfo = leadsMap.get(s.idLead);
+      return leadInfo?.campusInteres === userCampus;
+    });
+  }
 
   // Filtrar por búsqueda profunda
   if (searchQuery) {

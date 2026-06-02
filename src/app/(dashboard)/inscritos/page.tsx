@@ -29,12 +29,8 @@ export default async function InscritosPage({
 
   // Filtrar
   const inscritos = todosInscritos.filter(inscrito => {
-    // Si el usuario es de un Campus específico, obligar el filtro a su campus
-    if (role === "Campus" && inscrito.campus !== userCampus) return false;
-    
-    // Si el Asesor entra a esta página, idealmente solo vería sus inscritos, 
-    // pero si es tabla general de Campus, la regla podría variar. Por seguridad:
-    if (role === "Asesor" && inscrito.asesor !== session.user.email) return false;
+    // Si el usuario es de un Campus o Asesor, obligar el filtro a su campus
+    if ((role === "Campus" || role === "Asesor") && inscrito.campus !== userCampus) return false;
 
     // Filtros de UI
     const yearMatch = filterYear === "Todos" || inscrito.año === filterYear;
