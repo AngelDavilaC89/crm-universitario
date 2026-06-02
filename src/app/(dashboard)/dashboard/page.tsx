@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { googleSheets } from "@/lib/google-sheets";
 import { DashboardCharts } from "@/components/dashboard/DashboardCharts";
+import { DashboardFilters } from "@/components/dashboard/DashboardFilters";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -43,14 +44,35 @@ function parseSeguimientoDate(dateStr: string) {
   );
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const session = await getServerSession(authOptions);
+  const params = await searchParams;
   
   // Obtener datos
-  const [leads, seguimientos] = await Promise.all([
+  const [allLeads, seguimientos] = await Promise.all([
     googleSheets.getLeads(),
     googleSheets.getAllSeguimientos()
   ]);
+
+  // 1. Filtrar los leads base según los permisos del usuario
+  const userCampus = session?.user?.campus;
+  let leads = allLeads;
+  
+  if (userCampus && userCampus !== "Todos") {
+    // Si NO es administrador global ("Todos"), solo puede ver los leads de su campus
+    leads = leads.filter(l => l.campusInteres === userCampus);
+  } else {
+    // Es administrador global ("Todos"), aplicamos los filtros de la URL (DashboardFilters)
+    if (params.campus) leads = leads.filter(l => l.campusInteres === params.campus);
+    if (params.year) leads = leads.filter(l => String(l.año) === String(params.year));
+    if (params.period) leads = leads.filter(l => String(l.periodoInteres) === String(params.period));
+  }
+
+  // 2. Extraer opciones únicas para los filtros (basado en TODOS los leads, no los filtrados, para que los selects siempre tengan opciones)
+  // Opcional: Extraer opciones del allLeads o leads. Como es "Todos", lo extraemos del allLeads
+  const uniqueCampuses = Array.from(new Set(allLeads.map(l => l.campusInteres).filter(Boolean))) as string[];
+  const uniqueYears = Array.from(new Set(allLeads.map(l => String(l.año)).filter(Boolean))) as string[];
+  const uniquePeriods = Array.from(new Set(allLeads.map(l => String(l.periodoInteres)).filter(Boolean))) as string[];
 
   // Agrupar seguimientos por Lead (encontrar el más antiguo)
   const primerSeguimientoPorLead = new Map<string, Date>();
@@ -136,9 +158,18 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div className="max-w-4xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="p-8">
-          <p className="text-slate-600 text-lg">
+          <p className="text-slate-600 text-lg mb-6">
             Bienvenido al Panel Operativo, <strong className="text-slate-800">{session?.user?.name}</strong>.
           </p>
+
+          {/* Mostrar filtros solo si tiene permiso "Todos" */}
+          {userCampus === "Todos" && (
+            <DashboardFilters 
+              campuses={uniqueCampuses} 
+              years={uniqueYears} 
+              periods={uniquePeriods} 
+            />
+          )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
             <div className="p-5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 shadow-sm">
