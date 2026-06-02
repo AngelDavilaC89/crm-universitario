@@ -117,6 +117,10 @@ export class GoogleSheetsService {
     return Array.from(new Set(activas));
   }
 
+  async getTurnos() {
+    return ['Matutino', 'Vespertino', 'Nocturno', 'Sabatino', 'Dominical'];
+  }
+
   async getMedios() {
     await this.init();
     const sheet = this.doc.sheetsByTitle['Medios'];
