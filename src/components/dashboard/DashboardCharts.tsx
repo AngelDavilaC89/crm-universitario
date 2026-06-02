@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { useRouter } from "next/navigation";
 
 type ChartData = {
   name: string;
@@ -9,6 +10,7 @@ type ChartData = {
 };
 
 export function DashboardCharts({ data, averageHours }: { data: ChartData[], averageHours: number }) {
+  const router = useRouter();
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 bg-slate-50 border border-slate-100 rounded-2xl">
@@ -73,9 +75,24 @@ export function DashboardCharts({ data, averageHours }: { data: ChartData[], ave
               tick={{ fill: '#94A3B8', fontSize: 12 }}
             />
             <Tooltip cursor={{ fill: '#F1F5F9' }} content={<CustomTooltip />} />
-            <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+            <Bar 
+              dataKey="count" 
+              radius={[6, 6, 0, 0]}
+              onClick={(data: any) => {
+                const name = data.name;
+                let slaParam = "";
+                if (name === "< 1 hora") slaParam = "menos-1-hora";
+                else if (name === "1 a 4 horas") slaParam = "1-a-4-horas";
+                else if (name === "4 a 24 horas") slaParam = "4-a-24-horas";
+                else if (name === "> 1 día") slaParam = "mas-1-dia";
+                
+                if (slaParam) {
+                  router.push(`/leads?sla=${slaParam}`);
+                }
+              }}
+            >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+                <Cell key={`cell-${index}`} fill={entry.color} className="cursor-pointer hover:opacity-80 transition-opacity" />
               ))}
             </Bar>
           </BarChart>

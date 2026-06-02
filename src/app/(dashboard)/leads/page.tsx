@@ -3,11 +3,12 @@ import { authOptions } from "@/lib/auth";
 import { googleSheets } from "@/lib/google-sheets";
 import Link from "next/link";
 import { UserPlus, Calendar, Phone, Mail, MapPin, Search, Users } from "lucide-react";
+import { parseSeguimientoDate } from "@/lib/date-utils";
 
 export default async function LeadsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ año?: string; periodo?: string; q?: string }>;
+  searchParams: Promise<{ año?: string; periodo?: string; q?: string; sla?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   if (!session) return null;
@@ -23,11 +24,30 @@ export default async function LeadsPage({
   const currentYear = resolvedParams.año || new Date().getFullYear().toString();
   const currentPeriod = resolvedParams.periodo || "Todos";
   const searchQuery = resolvedParams.q?.toLowerCase() || "";
+  const slaFilter = resolvedParams.sla || null;
 
   // Obtener leads desde Google Sheets
-  const allLeads = await googleSheets.getLeads();
+  const [allLeads, allSeguimientos] = await Promise.all([
+    googleSheets.getLeads(),
+    googleSheets.getAllSeguimientos()
+  ]);
 
-  // Filtrar leads según el rol, año y periodo
+  // Si hay filtro de SLA, pre-calcular el primer seguimiento de cada lead
+  const primerSeguimientoPorLead = new Map<string, Date>();
+  if (slaFilter) {
+    allSeguimientos.forEach(seg => {
+      if (!seg.idLead || !seg.fecha) return;
+      const fechaSeg = parseSeguimientoDate(seg.fecha);
+      if (!fechaSeg) return;
+      
+      const existente = primerSeguimientoPorLead.get(seg.idLead);
+      if (!existente || fechaSeg < existente) {
+        primerSeguimientoPorLead.set(seg.idLead, fechaSeg);
+      }
+    });
+  }
+
+  // Filtrar leads según el rol, año, periodo y SLA
   const filteredLeads = allLeads.filter((lead: any) => {
     // Filtro por rol
     let roleMatch = false;
@@ -50,8 +70,46 @@ export default async function LeadsPage({
       const valores = Object.values(lead).map(v => String(v).toLowerCase());
       searchMatch = valores.some(v => v.includes(searchQuery));
     }
+    
+    // Filtro por SLA
+    let slaMatch = true;
+    if (slaFilter) {
+      slaMatch = false; // Por defecto no coincide si hay filtro
+      
+      let timestampRegistro = NaN;
+      if (lead.idLead) {
+        const parts = lead.idLead.split('-');
+        if (parts.length === 2) timestampRegistro = parseInt(parts[1]);
+        
+        if (isNaN(timestampRegistro) || timestampRegistro < 1000000000) {
+          if (lead.fecha) {
+            const dParts = lead.fecha.split('/');
+            if (dParts.length === 3) {
+              const fallbackDate = new Date(parseInt(dParts[2]), parseInt(dParts[1]) - 1, parseInt(dParts[0]), 9, 0, 0);
+              timestampRegistro = fallbackDate.getTime();
+            }
+          }
+        }
+        
+        if (!isNaN(timestampRegistro)) {
+          const fechaPrimerContacto = primerSeguimientoPorLead.get(lead.idLead);
+          if (fechaPrimerContacto) {
+            const diffMs = fechaPrimerContacto.getTime() - timestampRegistro;
+            const diffHoras = Math.abs(diffMs) / (1000 * 60 * 60);
+            
+            // Ignorar los datos atípicos mayores a 30 días para que no rompan el dashboard
+            if (diffHoras <= 24 * 30) {
+              if (slaFilter === "menos-1-hora" && diffHoras <= 1) slaMatch = true;
+              else if (slaFilter === "1-a-4-horas" && diffHoras > 1 && diffHoras <= 4) slaMatch = true;
+              else if (slaFilter === "4-a-24-horas" && diffHoras > 4 && diffHoras <= 24) slaMatch = true;
+              else if (slaFilter === "mas-1-dia" && diffHoras > 24) slaMatch = true;
+            }
+          }
+        }
+      }
+    }
 
-    return añoMatch && periodoMatch && searchMatch;
+    return añoMatch && periodoMatch && searchMatch && slaMatch;
   });
 
   return (
