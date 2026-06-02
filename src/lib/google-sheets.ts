@@ -78,7 +78,8 @@ export class GoogleSheetsService {
       turnoAsignado: row.get('Turno Asignado'),
       carreraAsignada: row.get('Carrera Asignada'),
       statusColegiatura: row.get('Status Colegiatura'),
-      llamadaCalidad: row.get('Llamada de Calidad')
+      llamadaCalidad: row.get('Llamada de Calidad'),
+      inscritoPor: row.get('Inscrito Por')
     }));
   }
 
@@ -243,6 +244,9 @@ export class GoogleSheetsService {
       row.set('Folio de Pago Colegiatura', data.folioColegiatura);
       row.set('Monto Colegiatura', data.montoColegiatura);
       row.set('Status Colegiatura', data.statusColegiatura);
+      if (data.inscritoPor) {
+        row.set('Inscrito Por', data.inscritoPor);
+      }
       
       await row.save();
       return true;

@@ -219,7 +219,7 @@ export function GrupoCard({ grupo }: { grupo: any }) {
                         </div>
                         <div className="text-right flex flex-col items-end gap-2">
                           <span className="text-xs font-semibold text-slate-700 bg-white px-2 py-1 rounded-lg shadow-sm border border-slate-100">
-                            Por: {alumno.asesor?.split('@')[0]}
+                            Por: {(alumno.inscritoPor || alumno.asesor)?.split('@')[0] || 'Sin Asignar'}
                           </span>
                           
                           {/* Mostrar Botón de Llamada de Calidad si está pendiente */}

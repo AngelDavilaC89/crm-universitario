@@ -2,8 +2,13 @@
 
 import { googleSheets } from "@/lib/google-sheets";
 import { revalidatePath } from "next/cache";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 
 export async function completarInscripcion(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if (!session) return { success: false, error: "No autorizado" };
+
   const idLead = formData.get("idLead") as string;
   const folioColegiatura = formData.get("folioColegiatura") as string;
   const montoColegiatura = formData.get("montoColegiatura") as string;
@@ -16,7 +21,8 @@ export async function completarInscripcion(formData: FormData) {
   const exito = await googleSheets.completarInscripcionLead(idLead, {
     folioColegiatura,
     montoColegiatura,
-    statusColegiatura
+    statusColegiatura,
+    inscritoPor: session.user.email
   });
 
   if (exito) {
