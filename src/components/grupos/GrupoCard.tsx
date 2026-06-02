@@ -1,10 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import { Users, AlertCircle, CheckCircle2, X, GraduationCap, Calendar, MapPin, BookOpen } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Users, AlertCircle, CheckCircle2, X, GraduationCap, Calendar, MapPin, BookOpen, Edit2, Loader2, Check } from "lucide-react";
+import { completarInscripcion } from "@/app/actions/completarInscripcion";
 
 export function GrupoCard({ grupo }: { grupo: any }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  const handleCompletar = async (formData: FormData) => {
+    startTransition(async () => {
+      const res = await completarInscripcion(formData);
+      if (res.success) {
+        setEditingStudent(null);
+      } else {
+        alert(res.error || "Ocurrió un error");
+      }
+    });
+  };
 
   const cantidad = grupo.inscritos.length;
   const meta = 8;
@@ -151,27 +165,124 @@ export function GrupoCard({ grupo }: { grupo: any }) {
             {/* Contenido scrolleable */}
             <div className="p-6 overflow-y-auto flex-1">
               <div className="space-y-3">
-                {grupo.inscritos.map((alumno: any, index: number) => (
-                  <div key={index} className="flex items-start justify-between p-4 rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all hover:border-blue-100">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-800">{alumno.prospecto}</h4>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500">
-                          <span className="flex items-center"><MapPin className="w-3 h-3 mr-1" />{alumno.campus}</span>
-                          <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> Inscrito: {alumno.fechaInscripcion || "Fecha N/A"}</span>
+                {grupo.inscritos.map((alumno: any, index: number) => {
+                  const isPreInscrito = alumno.statusLead === 'Pre-inscrito';
+                  const isInscrito = alumno.statusLead === 'Inscrito';
+                  const isEditing = editingStudent === alumno.idLead;
+
+                  return (
+                    <div key={index} className="flex flex-col rounded-2xl border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-sm transition-all overflow-hidden">
+                      <div className="flex items-start justify-between p-4">
+                        <div className="flex items-start gap-4">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0 ${isInscrito ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+                            {index + 1}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-bold text-slate-800">{alumno.prospecto}</h4>
+                              {isInscrito && (
+                                <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                                  <Check className="w-3 h-3" /> Inscrito
+                                </span>
+                              )}
+                              {isPreInscrito && (
+                                <span className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                                  Pre-inscrito
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-500">
+                              <span className="flex items-center"><MapPin className="w-3 h-3 mr-1" />{alumno.campusInteres || alumno.campus}</span>
+                              <span className="flex items-center"><Calendar className="w-3 h-3 mr-1" /> Inscrito: {alumno.fechaInscripcion || alumno.ultimaActualizacion || "Fecha N/A"}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right flex flex-col items-end gap-2">
+                          <span className="text-xs font-semibold text-slate-700 bg-white px-2 py-1 rounded-lg shadow-sm border border-slate-100">
+                            Por: {alumno.asesor?.split('@')[0]}
+                          </span>
+                          
+                          {isPreInscrito && !isEditing && (
+                            <button 
+                              onClick={() => setEditingStudent(alumno.idLead)}
+                              className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                              Completar Pago
+                            </button>
+                          )}
+                          {isEditing && (
+                            <button 
+                              onClick={() => setEditingStudent(null)}
+                              className="flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          )}
                         </div>
                       </div>
+
+                      {/* Formulario Desplegable */}
+                      {isEditing && (
+                        <div className="p-4 bg-blue-50/50 border-t border-blue-100">
+                          <form action={handleCompletar} className="space-y-4">
+                            <input type="hidden" name="idLead" value={alumno.idLead} />
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-xs font-medium text-slate-700 mb-1">Folio Colegiatura</label>
+                                <input 
+                                  required
+                                  type="text" 
+                                  name="folioColegiatura"
+                                  placeholder="Ej. FOL-992"
+                                  className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-800"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-slate-700 mb-1">Monto Colegiatura</label>
+                                <div className="relative">
+                                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-medium text-sm">$</span>
+                                  <input 
+                                    required
+                                    type="number" 
+                                    name="montoColegiatura"
+                                    placeholder="0.00"
+                                    min="0"
+                                    step="0.01"
+                                    className="w-full pl-7 pr-3 py-2 bg-white border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-800"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <label className="block text-xs font-medium text-slate-700 mb-1">Resolución</label>
+                              <select 
+                                required
+                                name="statusColegiatura"
+                                className="w-full px-3 py-2 bg-white border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm text-slate-800"
+                              >
+                                <option value="Pago Completado">Pago Completado (Inscrito)</option>
+                                <option value="Convenio de Pago Primera colegiatura">Convenio de Pago Primera colegiatura</option>
+                                <option value="Decide no continuar el proceso-Pide devolucion de papeleria y pago">Decide no continuar el proceso - Pide devolución</option>
+                                <option value="Decide no continuar el proceso">Decide no continuar el proceso</option>
+                              </select>
+                            </div>
+
+                            <button 
+                              type="submit"
+                              disabled={isPending}
+                              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-2 rounded-lg transition-all text-sm"
+                            >
+                              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Completar Inscripción"}
+                            </button>
+                          </form>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right flex flex-col items-end">
-                      <span className="text-xs font-semibold text-slate-700 bg-white px-2 py-1 rounded-lg shadow-sm border border-slate-100">
-                        Por: {alumno.asesor?.split('@')[0]}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
             

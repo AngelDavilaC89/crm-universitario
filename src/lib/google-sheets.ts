@@ -70,7 +70,14 @@ export class GoogleSheetsService {
       etapa: row.get('Etapa'),
       comentario: row.get('Comentario'),
       ultimaActualizacion: row.get('Fecha de última actualización'),
-      statusLead: row.get('Status Lead')
+      statusLead: row.get('Status Lead'),
+      folioPapeleria: row.get('Folio de Pago Papeleria'),
+      montoPapeleria: row.get('Monto Papelería'),
+      folioColegiatura: row.get('Folio de Pago Colegiatura'),
+      montoColegiatura: row.get('Monto Colegiatura'),
+      turnoAsignado: row.get('Turno Asignado'),
+      carreraAsignada: row.get('Carrera Asignada'),
+      statusColegiatura: row.get('Status Colegiatura')
     }));
   }
 
@@ -175,6 +182,63 @@ export class GoogleSheetsService {
     if (row) {
       row.set('Status Lead', newStatus);
       row.set('Fecha de última actualización', new Date().toLocaleDateString('es-MX'));
+      await row.save();
+      return true;
+    }
+    return false;
+  }
+
+  // Pre-inscribir un Lead (Etapa 1 - Guarda papelería y turno final)
+  async preInscribirLead(idLead: string, data: any) {
+    await this.init();
+    const sheet = this.doc.sheetsByTitle['Leads'];
+    if (!sheet) return false;
+
+    // Cargar encabezados para reconocer las nuevas columnas
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.get('ID Lead') === idLead);
+    
+    if (row) {
+      row.set('Status Lead', 'Pre-inscrito');
+      row.set('Fecha de última actualización', new Date().toLocaleDateString('es-MX'));
+      
+      // Guardar las nuevas 4 columnas de la Etapa 1
+      row.set('Folio de Pago Papeleria', data.folioPapeleria);
+      row.set('Monto Papelería', data.montoPapeleria);
+      row.set('Carrera Asignada', data.carreraAsignada);
+      row.set('Turno Asignado', data.turnoAsignado);
+      
+      await row.save();
+      return true;
+    }
+    return false;
+  }
+
+  // Completar Inscripción (Etapa 2 - Guarda colegiatura y resolución)
+  async completarInscripcionLead(idLead: string, data: any) {
+    await this.init();
+    const sheet = this.doc.sheetsByTitle['Leads'];
+    if (!sheet) return false;
+
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.get('ID Lead') === idLead);
+    
+    if (row) {
+      // Si la decisión fue positiva
+      if (data.statusColegiatura === "Convenio de Pago Primera colegiatura" || data.statusColegiatura === "Pago Completado") {
+        row.set('Status Lead', 'Inscrito');
+      } else {
+        // Si pidió devolución o decidió no continuar
+        row.set('Status Lead', 'Baja');
+      }
+      
+      row.set('Fecha de última actualización', new Date().toLocaleDateString('es-MX'));
+      row.set('Folio de Pago Colegiatura', data.folioColegiatura);
+      row.set('Monto Colegiatura', data.montoColegiatura);
+      row.set('Status Colegiatura', data.statusColegiatura);
+      
       await row.save();
       return true;
     }

@@ -15,15 +15,16 @@ export default async function GruposPage({
   const role = session.user.role;
   const campus = session.user.campus;
 
-  // Obtener inscritos
-  const inscritos = await googleSheets.getInscritos();
+  // Obtener leads que están en etapa de inscripción
+  const allLeads = await googleSheets.getLeads();
+  const inscritos = allLeads.filter(l => l.statusLead === 'Pre-inscrito' || l.statusLead === 'Inscrito');
 
   const resolvedParams = await searchParams;
   const searchQuery = resolvedParams.q?.toLowerCase() || "";
 
   // Filtrar por campus si es "Campus" o "Asesor"
   let inscritosFiltrados = (role === "Campus" || role === "Asesor") 
-    ? inscritos.filter(i => i.campus === campus)
+    ? inscritos.filter(i => i.campusInteres === campus)
     : inscritos;
 
   // Búsqueda profunda en los inscritos que formarán los grupos
@@ -34,17 +35,16 @@ export default async function GruposPage({
     });
   }
 
-  // Agrupar por la llave única: Campus + Año + Periodo + Carrera + Modalidad + Turno
   const gruposMap = new Map<string, any>();
 
   inscritosFiltrados.forEach(inscrito => {
-    // Si falta algún dato, usamos "?" para no ocultar al alumno y que el usuario sepa que le falta información
+    // Usar los valores FINALES asignados en la Pre-inscripción si existen, sino hacer fallback
     const año = inscrito.año || "Año ?";
-    const periodo = inscrito.periodo || "Periodo ?";
-    const carrera = inscrito.carrera || "Carrera ?";
-    const turno = inscrito.turno || "Turno ?";
+    const periodo = inscrito.periodoInteres || "Periodo ?";
+    const carrera = inscrito.carreraAsignada || inscrito.carrera || "Carrera ?";
+    const turno = inscrito.turnoAsignado || inscrito.turno || "Turno ?";
     const modalidad = inscrito.modalidad || "Modalidad ?";
-    const campusStr = inscrito.campus || "Campus ?";
+    const campusStr = inscrito.campusInteres || "Campus ?";
 
     const llaveGrupo = `${campusStr}|${año}|${periodo}|${carrera}|${modalidad}|${turno}`;
     
