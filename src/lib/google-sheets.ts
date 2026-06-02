@@ -53,33 +53,41 @@ export class GoogleSheetsService {
     }
     const rows = await sheet.getRows();
     const validRows = rows.filter(r => r.get('ID Lead') || r.get('Prospecto'));
+    const safeGet = (row: any, key: string) => {
+      try {
+        return row.get(key);
+      } catch (e) {
+        return undefined;
+      }
+    };
+
     return validRows.map(row => ({
-      idLead: row.get('ID Lead'),
-      fecha: row.get('Fecha'),
-      prospecto: row.get('Prospecto'),
-      celular: row.get('Celular'),
-      correo: row.get('Correo'),
-      campusInteres: row.get('Campus de Interés'),
-      carrera: row.get('Carrera'),
-      modalidad: row.get('Modalidad'),
-      turno: row.get('Turno'),
-      periodoInteres: row.get('Periodo de Interés'),
-      año: row.get('Año'),
-      medio: row.get('Medio'),
-      asesor: row.get('Asesor'),
-      etapa: row.get('Etapa'),
-      comentario: row.get('Comentario'),
-      ultimaActualizacion: row.get('Fecha de última actualización'),
-      statusLead: row.get('Status Lead'),
-      folioPapeleria: row.get('Folio de Pago Papeleria'),
-      montoPapeleria: row.get('Monto Papelería'),
-      folioColegiatura: row.get('Folio de Pago Colegiatura'),
-      montoColegiatura: row.get('Monto Colegiatura'),
-      turnoAsignado: row.get('Turno Asignado'),
-      carreraAsignada: row.get('Carrera Asignada'),
-      statusColegiatura: row.get('Status Colegiatura'),
-      llamadaCalidad: row.get('Llamada de Calidad'),
-      inscritoPor: row.get('Inscrito Por')
+      idLead: safeGet(row, 'ID Lead'),
+      fecha: safeGet(row, 'Fecha'),
+      prospecto: safeGet(row, 'Prospecto'),
+      celular: safeGet(row, 'Celular'),
+      correo: safeGet(row, 'Correo'),
+      campusInteres: safeGet(row, 'Campus de Interés'),
+      carrera: safeGet(row, 'Carrera'),
+      modalidad: safeGet(row, 'Modalidad'),
+      turno: safeGet(row, 'Turno'),
+      periodoInteres: safeGet(row, 'Periodo de Interés'),
+      año: safeGet(row, 'Año'),
+      medio: safeGet(row, 'Medio'),
+      asesor: safeGet(row, 'Asesor'),
+      etapa: safeGet(row, 'Etapa'),
+      comentario: safeGet(row, 'Comentario'),
+      ultimaActualizacion: safeGet(row, 'Fecha de última actualización'),
+      statusLead: safeGet(row, 'Status Lead'),
+      folioPapeleria: safeGet(row, 'Folio de Pago Papeleria'),
+      montoPapeleria: safeGet(row, 'Monto Papelería'),
+      folioColegiatura: safeGet(row, 'Folio de Pago Colegiatura'),
+      montoColegiatura: safeGet(row, 'Monto Colegiatura'),
+      turnoAsignado: safeGet(row, 'Turno Asignado'),
+      carreraAsignada: safeGet(row, 'Carrera Asignada'),
+      statusColegiatura: safeGet(row, 'Status Colegiatura'),
+      llamadaCalidad: safeGet(row, 'Llamada de Calidad'),
+      inscritoPor: safeGet(row, 'Inscrito Por')
     }));
   }
 
@@ -288,17 +296,25 @@ export class GoogleSheetsService {
     if (!sheet) return [];
 
     const rows = await sheet.getRows();
-    const validRows = rows.filter(r => r.get('ID Seguimiento') || r.get('ID Lead') || r.get('Comentario'));
+    const safeGet = (row: any, key: string) => {
+      try {
+        return row.get(key);
+      } catch (e) {
+        return undefined;
+      }
+    };
+
+    const validRows = rows.filter(r => safeGet(r, 'ID Seguimiento') || safeGet(r, 'ID Lead') || safeGet(r, 'Comentario'));
     return validRows.map(row => ({
-      idSeguimiento: row.get('ID Seguimiento'),
-      idLead: row.get('ID Lead'),
-      fecha: row.get('Fecha seguimiento'),
-      tipoContacto: row.get('Medio contacto'),
-      comentario: row.get('Comentario'),
-      resultado: row.get('Resultado'),
-      proximaAccion: row.get('Próxima acción'),
-      fechaProxima: row.get('Fecha próxima acción'),
-      asesor: row.get('Asesor')
+      idSeguimiento: safeGet(row, 'ID Seguimiento'),
+      idLead: safeGet(row, 'ID Lead'),
+      fecha: safeGet(row, 'Fecha seguimiento'),
+      tipoContacto: safeGet(row, 'Medio contacto'),
+      comentario: safeGet(row, 'Comentario'),
+      resultado: safeGet(row, 'Resultado'),
+      proximaAccion: safeGet(row, 'Próxima acción'),
+      fechaProxima: safeGet(row, 'Fecha próxima acción'),
+      asesor: safeGet(row, 'Asesor')
     })).reverse();
   }
 
@@ -309,18 +325,27 @@ export class GoogleSheetsService {
     if (!sheet) return [];
 
     const rows = await sheet.getRows();
+    
+    const safeGet = (row: any, key: string) => {
+      try {
+        return row.get(key);
+      } catch (e) {
+        return undefined;
+      }
+    };
+
     return rows
-      .filter(r => r.get('ID Lead') === idLead && (r.get('ID Seguimiento') || r.get('Comentario')))
+      .filter(r => safeGet(r, 'ID Lead') === idLead && (safeGet(r, 'ID Seguimiento') || safeGet(r, 'Comentario')))
       .map(row => ({
-        idSeguimiento: row.get('ID Seguimiento'),
-        idLead: row.get('ID Lead'),
-        fecha: row.get('Fecha seguimiento'),
-        tipoContacto: row.get('Medio contacto'),
-        comentario: row.get('Comentario'),
-        resultado: row.get('Resultado'),
-        proximaAccion: row.get('Próxima acción'),
-        fechaProxima: row.get('Fecha próxima acción'),
-        asesor: row.get('Asesor')
+        idSeguimiento: safeGet(row, 'ID Seguimiento'),
+        idLead: safeGet(row, 'ID Lead'),
+        fecha: safeGet(row, 'Fecha seguimiento'),
+        tipoContacto: safeGet(row, 'Medio contacto'),
+        comentario: safeGet(row, 'Comentario'),
+        resultado: safeGet(row, 'Resultado'),
+        proximaAccion: safeGet(row, 'Próxima acción'),
+        fechaProxima: safeGet(row, 'Fecha próxima acción'),
+        asesor: safeGet(row, 'Asesor')
       }))
       .reverse(); // Para que salgan los más nuevos primero
   }

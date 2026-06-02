@@ -20,19 +20,21 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     googleSheets.getAllSeguimientos()
   ]);
 
-  // 1. Filtrar los leads base según los permisos del usuario
+  // 1. Filtrar los leads base según los permisos del usuario y filtros URL
   const userCampus = session?.user?.campus;
   let leads = allLeads;
   
   if (userCampus && userCampus !== "Todos") {
     // Si NO es administrador global ("Todos"), solo puede ver los leads de su campus
     leads = leads.filter(l => l.campusInteres === userCampus);
-  } else {
-    // Es administrador global ("Todos"), aplicamos los filtros de la URL (DashboardFilters)
-    if (params.campus) leads = leads.filter(l => l.campusInteres === params.campus);
-    if (params.year) leads = leads.filter(l => String(l.año) === String(params.year));
-    if (params.period) leads = leads.filter(l => String(l.periodoInteres) === String(params.period));
+  } else if (params.campus) {
+    // Es administrador global y seleccionó un campus en el filtro
+    leads = leads.filter(l => l.campusInteres === params.campus);
   }
+
+  // Filtros de Año y Periodo (aplicables para TODOS los roles)
+  if (params.year) leads = leads.filter(l => String(l.año) === String(params.year));
+  if (params.period) leads = leads.filter(l => String(l.periodoInteres) === String(params.period));
 
   // 2. Extraer opciones únicas para los filtros (basado en TODOS los leads, no los filtrados, para que los selects siempre tengan opciones)
   // Opcional: Extraer opciones del allLeads o leads. Como es "Todos", lo extraemos del allLeads
@@ -164,14 +166,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             Bienvenido al Panel Operativo, <strong className="text-slate-800">{session?.user?.name}</strong>.
           </p>
 
-          {/* Mostrar filtros solo si tiene permiso "Todos" */}
-          {userCampus === "Todos" && (
-            <DashboardFilters 
-              campuses={uniqueCampuses} 
-              years={uniqueYears} 
-              periods={uniquePeriods} 
-            />
-          )}
+          {/* Mostrar filtros. El filtro de campus solo se muestra si tiene permiso "Todos" */}
+          <DashboardFilters 
+            campuses={uniqueCampuses} 
+            years={uniqueYears} 
+            periods={uniquePeriods} 
+            showCampus={userCampus === "Todos"}
+          />
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
             <div className="p-5 bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 shadow-sm">

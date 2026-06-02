@@ -7,9 +7,10 @@ interface DashboardFiltersProps {
   campuses: string[];
   years: string[];
   periods: string[];
+  showCampus: boolean;
 }
 
-export function DashboardFilters({ campuses, years, periods }: DashboardFiltersProps) {
+export function DashboardFilters({ campuses, years, periods, showCampus }: DashboardFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -29,16 +30,18 @@ export function DashboardFilters({ campuses, years, periods }: DashboardFiltersP
 
   return (
     <div className="flex flex-wrap items-center gap-4 mb-6">
-      <select
-        value={selectedCampus}
-        onChange={(e) => setSelectedCampus(e.target.value)}
-        className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-blue-500 shadow-sm"
-      >
-        <option value="">Todos los Campus</option>
-        {campuses.map(c => (
-          <option key={c} value={c}>{c}</option>
-        ))}
-      </select>
+      {showCampus && (
+        <select
+          value={selectedCampus}
+          onChange={(e) => setSelectedCampus(e.target.value)}
+          className="px-4 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 focus:outline-none focus:border-blue-500 shadow-sm"
+        >
+          <option value="">Todos los Campus</option>
+          {campuses.map(c => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      )}
 
       <select
         value={selectedYear}
