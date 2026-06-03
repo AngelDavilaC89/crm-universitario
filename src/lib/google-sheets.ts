@@ -3,38 +3,83 @@ import { JWT } from 'google-auth-library';
 
 export class GoogleSheetsService {
   private doc: GoogleSpreadsheet;
+  private initPromise: Promise<void> | null = null;
+  private lastInitTime = 0;
+  private rowsCache: Record<string, { time: number, promise: Promise<any[]> }> = {};
+  private readonly CACHE_TTL = 30 * 1000; // 30 segundos
 
   constructor() {
     const serviceAccountAuth = new JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      // Reemplazamos \n literales si existen en la variable de entorno
       key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      scopes: [
-        'https://www.googleapis.com/auth/spreadsheets',
-      ],
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
     const sheetId = process.env.GOOGLE_SHEET_ID;
-    if (!sheetId) {
-      throw new Error("GOOGLE_SHEET_ID no está configurado en .env.local");
-    }
+    if (!sheetId) throw new Error("GOOGLE_SHEET_ID no está configurado en .env.local");
 
     this.doc = new GoogleSpreadsheet(sheetId, serviceAccountAuth);
   }
 
-  // Método para cargar la información del documento
+  // Método para cargar la información del documento (con Caché Inteligente)
   async init() {
-    await this.doc.loadInfo();
+    const now = Date.now();
+    if (this.initPromise && (now - this.lastInitTime < this.CACHE_TTL)) {
+      return this.initPromise;
+    }
+
+    this.initPromise = this.doc.loadInfo().then(() => {
+      this.lastInitTime = Date.now();
+    }).catch(err => {
+      this.initPromise = null;
+      throw err;
+    });
+
+    return this.initPromise;
+  }
+
+  // Invalidar caché cuando hay escrituras
+  invalidateCache(sheetTitle?: string) {
+    if (sheetTitle) {
+      delete this.rowsCache[sheetTitle];
+    } else {
+      this.rowsCache = {};
+    }
+  }
+
+  // Obtener filas con caché
+  async getCachedRows(sheetTitle: string) {
+    await this.init();
+    const sheet = this.doc.sheetsByTitle[sheetTitle];
+    if (!sheet) return [];
+
+    const now = Date.now();
+    if (this.rowsCache[sheetTitle] && (now - this.rowsCache[sheetTitle].time < this.CACHE_TTL)) {
+      return this.rowsCache[sheetTitle].promise;
+    }
+
+    // eslint-disable-next-line no-async-promise-executor
+    const promise = new Promise<any[]>(async (resolve, reject) => {
+      try {
+        const rows = await sheet.getRows();
+        resolve(rows);
+      } catch (err) {
+        delete this.rowsCache[sheetTitle];
+        reject(err);
+      }
+    });
+
+    this.rowsCache[sheetTitle] = {
+      time: now,
+      promise
+    };
+
+    return promise;
   }
 
   // Ejemplo: Obtener todos los Asesores (para validar login)
   async getAsesores() {
-    await this.init();
-    const sheet = this.doc.sheetsByTitle['Asesores'];
-    if (!sheet) {
-      throw new Error("No se encontró la hoja 'Asesores'");
-    }
-    const rows = await sheet.getRows();
+    const rows = await this.getCachedRows('Asesores');
     const safeGet = (row: any, key: string) => {
       try {
         return row.get(key);
@@ -59,7 +104,7 @@ export class GoogleSheetsService {
     const sheet = this.doc.sheetsByTitle['Asesores'];
     if (!sheet) return false;
 
-    await sheet.loadHeaderRow(); // Asegurar que reconoce nuevas columnas
+    await sheet.loadHeaderRow();
 
     const rows = await sheet.getRows();
     const row = rows.find(r => {
@@ -73,6 +118,7 @@ export class GoogleSheetsService {
     if (row) {
       row.set('Contraseña', hashedPassword);
       await row.save();
+      this.invalidateCache('Asesores'); // <-- INVALIDAR CACHÉ
       return true;
     }
     return false;
@@ -106,6 +152,7 @@ export class GoogleSheetsService {
         
         row.set('Ultimo acceso', formattedDate);
         await row.save();
+        this.invalidateCache('Asesores'); // <-- INVALIDAR CACHÉ
         return true;
       }
       return false;
@@ -117,12 +164,7 @@ export class GoogleSheetsService {
 
   // Ejemplo: Obtener Leads
   async getLeads() {
-    await this.init();
-    const sheet = this.doc.sheetsByTitle['Leads'];
-    if (!sheet) {
-      throw new Error("No se encontró la hoja 'Leads'");
-    }
-    const rows = await sheet.getRows();
+    const rows = await this.getCachedRows('Leads');
     const validRows = rows.filter(r => r.get('ID Lead') || r.get('Prospecto'));
     const safeGet = (row: any, key: string) => {
       try {
@@ -164,10 +206,7 @@ export class GoogleSheetsService {
 
   // Obtener catálogos para los formularios
   async getCampus() {
-    await this.init();
-    const sheet = this.doc.sheetsByTitle['Campus'];
-    if (!sheet) return [];
-    const rows = await sheet.getRows();
+    const rows = await this.getCachedRows('Campus');
     return rows.filter(r => {
       const act = String(r.get('Activo')).trim().toLowerCase();
       return act === 'verdadero' || act === 'true' || act === 'sí' || act === 'si' || act === '1';
@@ -175,10 +214,7 @@ export class GoogleSheetsService {
   }
 
   async getCarreras() {
-    await this.init();
-    const sheet = this.doc.sheetsByTitle['Carreras'];
-    if (!sheet) return [];
-    const rows = await sheet.getRows();
+    const rows = await this.getCachedRows('Carreras');
     return rows.filter(r => {
       const act = String(r.get('Activo')).trim().toLowerCase();
       return act === 'verdadero' || act === 'true' || act === 'sí' || act === 'si' || act === '1';
@@ -186,10 +222,7 @@ export class GoogleSheetsService {
   }
 
   async getModalidades() {
-    await this.init();
-    const sheet = this.doc.sheetsByTitle['Modalidades'];
-    if (!sheet) return [];
-    const rows = await sheet.getRows();
+    const rows = await this.getCachedRows('Modalidades');
     const activas = rows.filter(r => {
       const act = String(r.get('Activo')).trim().toLowerCase();
       return act === 'verdadero' || act === 'true' || act === 'sí' || act === 'si' || act === '1';
@@ -203,10 +236,7 @@ export class GoogleSheetsService {
   }
 
   async getMedios() {
-    await this.init();
-    const sheet = this.doc.sheetsByTitle['Medios'];
-    if (!sheet) return [];
-    const rows = await sheet.getRows();
+    const rows = await this.getCachedRows('Medios');
     return rows.filter(r => {
       const act = String(r.get('Activo')).trim().toLowerCase();
       return act === 'verdadero' || act === 'true' || act === 'sí' || act === 'si' || act === '1';
@@ -237,7 +267,7 @@ export class GoogleSheetsService {
       'Modalidad': leadData.modalidad,
       'Turno': leadData.turno,
       'Periodo de Interés': leadData.periodoInteres,
-      'Año': leadData.año, // <-- NUEVO CAMPO AÑO
+      'Año': leadData.año,
       'Medio': leadData.medio,
       'Asesor': leadData.asesor,
       'Etapa': 'Nuevo lead',
@@ -246,6 +276,7 @@ export class GoogleSheetsService {
       'Status Lead': 'Nuevo lead'
     });
 
+    this.invalidateCache('Leads'); // <-- INVALIDAR CACHÉ
     return newId;
   }
 
@@ -268,6 +299,7 @@ export class GoogleSheetsService {
       row.set('Status Lead', newStatus);
       row.set('Fecha de última actualización', new Date().toLocaleDateString('es-MX'));
       await row.save();
+      this.invalidateCache('Leads');
       return true;
     }
     return false;
@@ -295,6 +327,7 @@ export class GoogleSheetsService {
       row.set('Turno Asignado', data.turnoAsignado);
       
       await row.save();
+      this.invalidateCache('Leads');
       return true;
     }
     return false;
@@ -328,6 +361,7 @@ export class GoogleSheetsService {
       }
       
       await row.save();
+      this.invalidateCache('Leads');
       return true;
     }
     return false;
@@ -355,6 +389,7 @@ export class GoogleSheetsService {
       row.set('Fecha de última actualización', new Date().toLocaleDateString('es-MX'));
       
       await row.save();
+      this.invalidateCache('Leads');
       return true;
     }
     return false;
@@ -362,11 +397,7 @@ export class GoogleSheetsService {
 
   // Obtener todos los seguimientos
   async getAllSeguimientos() {
-    await this.init();
-    const sheet = this.doc.sheetsByTitle['Seguimientos'];
-    if (!sheet) return [];
-
-    const rows = await sheet.getRows();
+    const rows = await this.getCachedRows('Seguimientos');
     const safeGet = (row: any, key: string) => {
       try {
         return row.get(key);
@@ -391,11 +422,7 @@ export class GoogleSheetsService {
 
   // Obtener seguimientos de un Lead
   async getSeguimientos(idLead: string) {
-    await this.init();
-    const sheet = this.doc.sheetsByTitle['Seguimientos'];
-    if (!sheet) return [];
-
-    const rows = await sheet.getRows();
+    const rows = await this.getCachedRows('Seguimientos');
     
     const safeGet = (row: any, key: string) => {
       try {
@@ -444,6 +471,7 @@ export class GoogleSheetsService {
     // Actualizar también la fecha de última actualización en el Lead principal y su estatus si es necesario
     await this.updateLeadStatus(data.idLead, data.nuevoEstatus || 'En seguimiento');
 
+    this.invalidateCache('Seguimientos');
     return newId;
   }
 
@@ -463,6 +491,7 @@ export class GoogleSheetsService {
       row.set('Próxima acción', data.proximaAccion);
       row.set('Fecha próxima acción', data.fechaProxima);
       await row.save();
+      this.invalidateCache('Seguimientos');
       return true;
     }
     return false;
@@ -471,11 +500,7 @@ export class GoogleSheetsService {
   // ----- MÓDULO DE INSCRITOS Y GRUPOS -----
 
   async getInscritos() {
-    await this.init();
-    const sheet = this.doc.sheetsByTitle['Inscritos'];
-    if (!sheet) return [];
-
-    const rows = await sheet.getRows();
+    const rows = await this.getCachedRows('Inscritos');
     return rows.map(row => ({
       idInscrito: row.get('ID Inscrito'),
       idLead: row.get('ID Lead'),
@@ -530,6 +555,7 @@ export class GoogleSheetsService {
     // Automáticamente cambiar el estatus del Lead original a Inscrito
     await this.updateLeadStatus(data.idLead, 'Inscrito');
 
+    this.invalidateCache('Inscritos');
     return newId;
   }
   // Actualizar un inscrito (solo campos generales)
@@ -553,6 +579,7 @@ export class GoogleSheetsService {
       if (data.año) row.set('Año', data.año);
       
       await row.save();
+      this.invalidateCache('Inscritos');
       return true;
     }
     return false;
