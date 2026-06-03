@@ -98,6 +98,16 @@ export class GoogleSheetsService {
     }));
   }
 
+  async getAsesoresMap() {
+    const asesores = await this.getAsesores();
+    return asesores.reduce((acc: any, asesor: any) => {
+      if (asesor.correo && asesor.nombre) {
+        acc[asesor.correo.trim().toLowerCase()] = asesor.nombre;
+      }
+      return acc;
+    }, {});
+  }
+
   // Actualizar la contraseña de un Asesor
   async updateAsesorPassword(email: string, hashedPassword: string) {
     await this.init();
@@ -164,7 +174,10 @@ export class GoogleSheetsService {
 
   // Ejemplo: Obtener Leads
   async getLeads() {
-    const rows = await this.getCachedRows('Leads');
+    const [rows, asesorMap] = await Promise.all([
+      this.getCachedRows('Leads'),
+      this.getAsesoresMap()
+    ]);
     const validRows = rows.filter(r => r.get('ID Lead') || r.get('Prospecto'));
     const safeGet = (row: any, key: string) => {
       try {
@@ -200,7 +213,9 @@ export class GoogleSheetsService {
       carreraAsignada: safeGet(row, 'Carrera Asignada'),
       statusColegiatura: safeGet(row, 'Status Colegiatura'),
       llamadaCalidad: safeGet(row, 'Llamada de Calidad'),
-      inscritoPor: safeGet(row, 'Inscrito Por')
+      inscritoPor: safeGet(row, 'Inscrito Por'),
+      asesorNombre: asesorMap[safeGet(row, 'Asesor')?.trim()?.toLowerCase()] || safeGet(row, 'Asesor'),
+      inscritoPorNombre: asesorMap[safeGet(row, 'Inscrito Por')?.trim()?.toLowerCase()] || safeGet(row, 'Inscrito Por')
     }));
   }
 
@@ -423,7 +438,10 @@ export class GoogleSheetsService {
 
   // Obtener todos los seguimientos
   async getAllSeguimientos() {
-    const rows = await this.getCachedRows('Seguimientos');
+    const [rows, asesorMap] = await Promise.all([
+      this.getCachedRows('Seguimientos'),
+      this.getAsesoresMap()
+    ]);
     const safeGet = (row: any, key: string) => {
       try {
         return row.get(key);
@@ -442,13 +460,17 @@ export class GoogleSheetsService {
       resultado: safeGet(row, 'Resultado'),
       proximaAccion: safeGet(row, 'Próxima acción'),
       fechaProxima: safeGet(row, 'Fecha próxima acción'),
-      asesor: safeGet(row, 'Asesor')
+      asesor: safeGet(row, 'Asesor'),
+      asesorNombre: asesorMap[safeGet(row, 'Asesor')?.trim()?.toLowerCase()] || safeGet(row, 'Asesor')
     })).reverse();
   }
 
   // Obtener seguimientos de un Lead
   async getSeguimientos(idLead: string) {
-    const rows = await this.getCachedRows('Seguimientos');
+    const [rows, asesorMap] = await Promise.all([
+      this.getCachedRows('Seguimientos'),
+      this.getAsesoresMap()
+    ]);
     
     const safeGet = (row: any, key: string) => {
       try {
@@ -469,7 +491,8 @@ export class GoogleSheetsService {
         resultado: safeGet(row, 'Resultado'),
         proximaAccion: safeGet(row, 'Próxima acción'),
         fechaProxima: safeGet(row, 'Fecha próxima acción'),
-        asesor: safeGet(row, 'Asesor')
+        asesor: safeGet(row, 'Asesor'),
+        asesorNombre: asesorMap[safeGet(row, 'Asesor')?.trim()?.toLowerCase()] || safeGet(row, 'Asesor')
       }))
       .reverse(); // Para que salgan los más nuevos primero
   }
@@ -526,7 +549,10 @@ export class GoogleSheetsService {
   // ----- MÓDULO DE INSCRITOS Y GRUPOS -----
 
   async getInscritos() {
-    const rows = await this.getCachedRows('Inscritos');
+    const [rows, asesorMap] = await Promise.all([
+      this.getCachedRows('Inscritos'),
+      this.getAsesoresMap()
+    ]);
     return rows.map(row => ({
       idInscrito: row.get('ID Inscrito'),
       idLead: row.get('ID Lead'),
@@ -538,6 +564,7 @@ export class GoogleSheetsService {
       periodo: row.get('Periodo'),
       año: row.get('Año'),
       asesor: row.get('Asesor'),
+      asesorNombre: asesorMap[row.get('Asesor')?.trim()?.toLowerCase()] || row.get('Asesor'),
       folioPago: row.get('Folio de Pago'),
       montoPagadoPapeleria: row.get('Monto Pagado Manejo Papeleria') || row.get('Monto Pagado'),
       montoPagadoInscripcion: row.get('Monto Pagado Inscripcion'),

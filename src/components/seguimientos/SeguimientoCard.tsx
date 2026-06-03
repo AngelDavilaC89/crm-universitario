@@ -49,7 +49,7 @@ export function SeguimientoCard({
           <div className="flex flex-col">
             <span className="font-semibold text-slate-800">{seg.tipoContacto || "Seguimiento"}</span>
             <span className="text-slate-500 text-sm mt-0.5 flex items-center gap-1.5">
-              por {seg.asesor} 
+              por {seg.asesorNombre || seg.asesor?.split('@')[0]} 
               <span className="text-slate-300">•</span> 
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               {seg.fecha || "Fecha no registrada"}

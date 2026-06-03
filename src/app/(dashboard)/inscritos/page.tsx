@@ -137,7 +137,7 @@ export default async function InscritosPage({
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-slate-800">{inscrito.asesor}</div>
+                      <div className="text-slate-800">{inscrito.asesorNombre || inscrito.asesor}</div>
                       <div className="text-xs text-slate-500 mt-1">
                         {inscrito.periodo} {inscrito.año}
                       </div>
