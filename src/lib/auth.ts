@@ -53,6 +53,12 @@ export const authOptions: NextAuthOptions = {
             }
           }
 
+          // Si llegamos hasta aquí, el login fue exitoso (o al menos autorizado para entrar/cambiar contraseña).
+          // Guardamos la fecha y hora de acceso en Google Sheets de forma asíncrona.
+          // No necesitamos hacer "await" obligatorio para no retrasar el login, 
+          // pero Next.js / Serverless podría matarlo, así que lo esperamos, no tarda mucho.
+          await googleSheets.updateLastAccess(user.correo).catch(e => console.error("Error guardando acceso", e));
+
           return {
             id: user.correo, // Usamos el correo como ID único
             name: user.nombre,

@@ -78,6 +78,43 @@ export class GoogleSheetsService {
     return false;
   }
 
+  // Actualizar la fecha y hora de último acceso
+  async updateLastAccess(email: string) {
+    try {
+      await this.init();
+      const sheet = this.doc.sheetsByTitle['Asesores'];
+      if (!sheet) return false;
+
+      await sheet.loadHeaderRow(); // Asegurar que reconoce nuevas columnas
+
+      const rows = await sheet.getRows();
+      const row = rows.find(r => {
+        try {
+          return r.get('Correo')?.trim().toLowerCase() === email.trim().toLowerCase();
+        } catch (e) {
+          return false;
+        }
+      });
+      
+      if (row) {
+        const now = new Date();
+        const formattedDate = now.toLocaleString('es-MX', { 
+          timeZone: 'America/Mexico_City',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
+        
+        row.set('Ultimo acceso', formattedDate);
+        await row.save();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error al actualizar último acceso:", error);
+      return false;
+    }
+  }
+
   // Ejemplo: Obtener Leads
   async getLeads() {
     await this.init();
