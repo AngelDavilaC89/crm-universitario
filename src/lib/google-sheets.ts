@@ -333,6 +333,32 @@ export class GoogleSheetsService {
     return false;
   }
 
+  // Editar Pre-inscripción (Etapa 1 - Modificar papelería y turno/carrera final)
+  async updatePreInscripcion(idLead: string, data: any) {
+    await this.init();
+    const sheet = this.doc.sheetsByTitle['Leads'];
+    if (!sheet) return false;
+
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.get('ID Lead') === idLead);
+    
+    if (row) {
+      if (data.montoPapeleria !== undefined) row.set('Monto Papelería', data.montoPapeleria);
+      if (data.carreraAsignada) row.set('Carrera Asignada', data.carreraAsignada);
+      if (data.turnoAsignado) row.set('Turno Asignado', data.turnoAsignado);
+      // El folio normalmente no se cambia, pero por si acaso
+      if (data.folioPapeleria) row.set('Folio de Pago Papeleria', data.folioPapeleria);
+      
+      row.set('Fecha de última actualización', new Date().toLocaleDateString('es-MX'));
+      
+      await row.save();
+      this.invalidateCache('Leads');
+      return true;
+    }
+    return false;
+  }
+
   // Completar Inscripción (Etapa 2 - Guarda colegiatura y resolución)
   async completarInscripcionLead(idLead: string, data: any) {
     await this.init();

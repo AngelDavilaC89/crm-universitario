@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { User, Phone, Mail, MapPin, Calendar, Clock, BookOpen, MessageCircle } from "lucide-react";
 import { NewSeguimientoForm } from "@/components/seguimientos/NewSeguimientoForm";
 import { SeguimientoCard } from "@/components/seguimientos/SeguimientoCard";
+import { EditPreInscripcionModal } from "@/components/leads/EditPreInscripcionModal";
 import Link from "next/link";
 
 export default async function LeadDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -107,10 +108,15 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
                 Pre-inscribir Prospecto
               </Link>
             ) : lead.statusLead.toLowerCase() === 'pre-inscrito' ? (
-              <div className="w-full text-center py-3 bg-slate-50 text-slate-500 rounded-xl font-medium text-sm border border-slate-200">
+              <div className="w-full text-center py-3 bg-slate-50 text-slate-500 rounded-xl font-medium text-sm border border-slate-200 mb-3">
                 Prospecto Pre-inscrito. Para completar inscripción ve a Grupos.
               </div>
             ) : null}
+            
+            {/* Si está pre-inscrito, permitir editar esos datos directamente desde aquí */}
+            {lead.statusLead && lead.statusLead.toLowerCase() === 'pre-inscrito' && (
+              <EditPreInscripcionModal lead={lead} />
+            )}
           </div>
         </div>
       </div>

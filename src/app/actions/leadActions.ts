@@ -44,3 +44,18 @@ export async function createLeadAction(formData: FormData) {
     return { success: false, error: error.message };
   }
 }
+
+export async function updatePreInscripcionAction(idLead: string, data: any) {
+  try {
+    const success = await googleSheets.updatePreInscripcion(idLead, data);
+    if (success) {
+      revalidatePath(`/leads/${idLead}`);
+      revalidatePath("/leads");
+      return { success: true };
+    }
+    return { success: false, error: "No se pudo actualizar" };
+  } catch (error: any) {
+    console.error("Error updating pre-inscripcion:", error);
+    return { success: false, error: error.message };
+  }
+}
