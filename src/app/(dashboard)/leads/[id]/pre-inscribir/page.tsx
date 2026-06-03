@@ -24,7 +24,7 @@ async function handlePreInscribir(formData: FormData) {
     montoPapeleria,
     carreraAsignada,
     turnoAsignado,
-    inscritoPor: session.user.email
+    inscritoPor: session.user?.email || ""
   });
 
   if (exito) {

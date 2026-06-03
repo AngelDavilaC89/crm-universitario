@@ -22,7 +22,7 @@ export async function completarInscripcion(formData: FormData) {
     folioColegiatura,
     montoColegiatura,
     statusColegiatura,
-    inscritoPor: session.user.email
+    inscritoPor: session.user?.email || ""
   });
 
   if (exito) {

@@ -25,7 +25,7 @@ export async function createLeadAction(formData: FormData) {
     // De lo contrario, asignar al primero del campus (o se podría hacer round-robin futuro)
     let asesorAsignado = "";
     if (session.user.role === "Asesor" && session.user.campus === campusInteres) {
-      asesorAsignado = session.user.email;
+      asesorAsignado = session.user.email || "";
     } else {
       asesorAsignado = asesoresCampus.length > 0 ? asesoresCampus[0].correo : "";
     }
@@ -60,7 +60,7 @@ export async function createLeadAction(formData: FormData) {
 export async function updatePreInscripcionAction(idLead: string, data: any) {
   try {
     const session = await getServerSession(authOptions);
-    if (session) {
+    if (session && session.user?.email) {
       data.inscritoPor = session.user.email;
     }
     const success = await googleSheets.updatePreInscripcion(idLead, data);
