@@ -27,6 +27,7 @@ export function EditInscritoModal({
     turno: inscrito.turno && !inscrito.turno.includes("?") ? inscrito.turno : "Matutino",
     periodo: inscrito.periodo && !inscrito.periodo.includes("?") ? inscrito.periodo : "Mayo-Agosto",
     año: inscrito.año && !inscrito.año.includes("?") ? inscrito.año : new Date().getFullYear().toString(),
+    montoPagadoPapeleria: inscrito.montoPagadoPapeleria || "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -81,7 +82,7 @@ export function EditInscritoModal({
 
               {/* Notice sobre campos protegidos */}
               <div className="text-xs text-slate-500 bg-blue-50 p-3 rounded-xl border border-blue-100">
-                Solo puedes editar los datos de asignación del grupo. Los datos financieros (Folio y Monto) están protegidos.
+                Puedes editar los datos de asignación del grupo y el monto de papelería. Otros datos financieros están protegidos.
               </div>
 
               <div>
@@ -189,6 +190,20 @@ export function EditInscritoModal({
                     <option value="Mayo-Agosto">Mayo-Agosto</option>
                     <option value="Septiembre-Diciembre">Septiembre-Diciembre</option>
                   </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Monto de Manejo de Papelería</label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3 text-slate-500">$</span>
+                  <input 
+                    type="number" 
+                    name="montoPagadoPapeleria"
+                    value={formData.montoPagadoPapeleria}
+                    onChange={handleChange}
+                    className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  />
                 </div>
               </div>
 

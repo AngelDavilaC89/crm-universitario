@@ -577,6 +577,11 @@ export class GoogleSheetsService {
       if (data.turno) row.set('Turno', data.turno);
       if (data.periodo) row.set('Periodo', data.periodo);
       if (data.año) row.set('Año', data.año);
+      if (data.montoPagadoPapeleria !== undefined) {
+        row.set('Monto Pagado Manejo Papeleria', data.montoPagadoPapeleria);
+        // También actualizamos el campo genérico de Monto Pagado por compatibilidad
+        row.set('Monto Pagado', data.montoPagadoPapeleria);
+      }
       
       await row.save();
       this.invalidateCache('Inscritos');
