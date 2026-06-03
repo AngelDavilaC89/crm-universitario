@@ -93,7 +93,7 @@ export function EditInscritoModal({
                   required
                   value={formData.prospecto}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 />
               </div>
 
@@ -105,7 +105,7 @@ export function EditInscritoModal({
                     required
                     value={formData.campus}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
                   >
                     {campusOptions.map((c, i) => (
                       <option key={i} value={c}>{c}</option>
@@ -119,7 +119,7 @@ export function EditInscritoModal({
                     required
                     value={formData.carrera}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
                   >
                     {carrerasOptions.map((c, i) => (
                       <option key={i} value={c}>{c}</option>
@@ -136,7 +136,7 @@ export function EditInscritoModal({
                     required
                     value={formData.modalidad}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
                   >
                     {modalidadesOptions.map((m, i) => (
                       <option key={i} value={m}>{m}</option>
@@ -150,7 +150,7 @@ export function EditInscritoModal({
                     required
                     value={formData.turno}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
                   >
                     <option value="Matutino">Matutino</option>
                     <option value="Nocturno">Nocturno</option>
@@ -168,7 +168,7 @@ export function EditInscritoModal({
                     required
                     value={formData.año}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
                   >
                     <option value="2024">2024</option>
                     <option value="2025">2025</option>
@@ -184,7 +184,7 @@ export function EditInscritoModal({
                     required
                     value={formData.periodo}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
                   >
                     <option value="Enero-Abril">Enero-Abril</option>
                     <option value="Mayo-Agosto">Mayo-Agosto</option>
@@ -202,7 +202,7 @@ export function EditInscritoModal({
                     name="montoPagadoPapeleria"
                     value={formData.montoPagadoPapeleria}
                     onChange={handleChange}
-                    className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
                 </div>
               </div>

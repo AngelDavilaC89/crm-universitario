@@ -81,7 +81,7 @@ export function EditPreInscripcionModal({
                     name="carreraAsignada"
                     value={formData.carreraAsignada}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
                 </div>
                 <div>
@@ -91,7 +91,7 @@ export function EditPreInscripcionModal({
                     required
                     value={formData.turnoAsignado}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
                   >
                     <option value="Matutino">Matutino</option>
                     <option value="Nocturno">Nocturno</option>
@@ -110,7 +110,7 @@ export function EditPreInscripcionModal({
                     name="montoPapeleria"
                     value={formData.montoPapeleria}
                     onChange={handleChange}
-                    className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
                 </div>
               </div>
