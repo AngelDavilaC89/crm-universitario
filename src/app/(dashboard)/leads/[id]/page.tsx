@@ -17,9 +17,10 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
   const idLead = resolvedParams.id;
 
   // Fetching de datos en paralelo
-  const [lead, seguimientos] = await Promise.all([
+  const [lead, seguimientos, carrerasOptions] = await Promise.all([
     googleSheets.getLeadById(idLead),
-    googleSheets.getSeguimientos(idLead)
+    googleSheets.getSeguimientos(idLead),
+    googleSheets.getCarreras()
   ]);
 
   if (!lead) {
@@ -115,7 +116,7 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
             
             {/* Si está pre-inscrito, permitir editar esos datos directamente desde aquí */}
             {lead.statusLead && lead.statusLead.toLowerCase() === 'pre-inscrito' && (
-              <EditPreInscripcionModal lead={lead} />
+              <EditPreInscripcionModal lead={lead} carrerasOptions={carrerasOptions} />
             )}
           </div>
         </div>

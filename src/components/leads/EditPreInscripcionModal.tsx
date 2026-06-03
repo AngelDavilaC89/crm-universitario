@@ -5,9 +5,11 @@ import { updatePreInscripcionAction } from "@/app/actions/leadActions";
 import { Loader2, Edit3, X } from "lucide-react";
 
 export function EditPreInscripcionModal({ 
-  lead
+  lead,
+  carrerasOptions
 }: { 
   lead: any;
+  carrerasOptions: string[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,13 +78,17 @@ export function EditPreInscripcionModal({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">Carrera Asignada</label>
-                  <input 
-                    type="text" 
+                  <select 
                     name="carreraAsignada"
+                    required
                     value={formData.carreraAsignada}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  />
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                  >
+                    {carrerasOptions.map((c, i) => (
+                      <option key={i} value={c}>{c}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">Turno Asignado</label>
