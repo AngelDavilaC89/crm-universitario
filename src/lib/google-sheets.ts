@@ -367,6 +367,7 @@ export class GoogleSheetsService {
       if (data.turnoAsignado) row.set('Turno Asignado', data.turnoAsignado);
       // El folio normalmente no se cambia, pero por si acaso
       if (data.folioPapeleria) row.set('Folio de Pago Papeleria', data.folioPapeleria);
+      if (data.inscritoPor) row.set('Inscrito Por', data.inscritoPor);
       
       row.set('Fecha de última actualización', new Date().toLocaleDateString('es-MX'));
       

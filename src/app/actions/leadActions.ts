@@ -59,6 +59,10 @@ export async function createLeadAction(formData: FormData) {
 
 export async function updatePreInscripcionAction(idLead: string, data: any) {
   try {
+    const session = await getServerSession(authOptions);
+    if (session) {
+      data.inscritoPor = session.user.email;
+    }
     const success = await googleSheets.updatePreInscripcion(idLead, data);
     if (success) {
       revalidatePath(`/leads/${idLead}`);
