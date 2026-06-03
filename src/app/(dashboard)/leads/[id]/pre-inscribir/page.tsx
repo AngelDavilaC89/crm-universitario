@@ -16,11 +16,15 @@ async function handlePreInscribir(formData: FormData) {
   const carreraAsignada = formData.get("carreraAsignada") as string;
   const turnoAsignado = formData.get("turnoAsignado") as string;
 
+  const session = await getServerSession(authOptions);
+  if (!session) return;
+
   const exito = await googleSheets.preInscribirLead(idLead, {
     folioPapeleria,
     montoPapeleria,
     carreraAsignada,
-    turnoAsignado
+    turnoAsignado,
+    inscritoPor: session.user.email
   });
 
   if (exito) {

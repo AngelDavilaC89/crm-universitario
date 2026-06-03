@@ -340,6 +340,9 @@ export class GoogleSheetsService {
       row.set('Monto Papelería', data.montoPapeleria);
       row.set('Carrera Asignada', data.carreraAsignada);
       row.set('Turno Asignado', data.turnoAsignado);
+      if (data.inscritoPor) {
+        row.set('Inscrito Por', data.inscritoPor);
+      }
       
       await row.save();
       this.invalidateCache('Leads');

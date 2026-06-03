@@ -3,8 +3,14 @@
 import { googleSheets } from "@/lib/google-sheets";
 import { revalidatePath } from "next/cache";
 
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+
 export async function createLeadAction(formData: FormData) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) throw new Error("No autenticado");
+
     const campusInteres = formData.get("campusInteres") as string;
     
     // Asignación automática de asesor por campus
@@ -15,8 +21,14 @@ export async function createLeadAction(formData: FormData) {
       a.activo
     );
     
-    // Si hay asesores, asignar al primero (o aleatorio). Si no, dejar vacío.
-    const asesorAsignado = asesoresCampus.length > 0 ? asesoresCampus[0].correo : "";
+    // Si el usuario logueado es Asesor o Campus y está creando para su propio campus, el asesor es él.
+    // De lo contrario, asignar al primero del campus (o se podría hacer round-robin futuro)
+    let asesorAsignado = "";
+    if (session.user.role === "Asesor" && session.user.campus === campusInteres) {
+      asesorAsignado = session.user.email;
+    } else {
+      asesorAsignado = asesoresCampus.length > 0 ? asesoresCampus[0].correo : "";
+    }
 
     const leadData = {
       prospecto: formData.get("prospecto"),
