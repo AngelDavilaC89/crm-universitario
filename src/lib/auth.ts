@@ -1,6 +1,7 @@
-import { NextAuthOptions } from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { googleSheets } from "@/lib/google-sheets";
+import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -35,13 +36,21 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          // Nota: En un sistema real la contraseña debe estar encriptada en la base de datos.
-          // Para este prototipo usando Google Sheets, asumo que usaremos una contraseña genérica
-          // o que hay una columna 'Password' (no mencionada). 
-          // Por simplicidad, aceptaremos '123' para todos los usuarios mientras tanto.
-          // TODO: Agregar validación de contraseña real si se agrega columna 'Password' a 'Asesores'
-          if (credentials.password !== "123") {
-            return null;
+          let needsPasswordChange = false;
+
+          // Verificar la contraseña
+          if (!user.password || user.password.trim() === "") {
+            // No tiene contraseña guardada, dejamos pasar si ingresa "123" pero lo marcamos para que la cambie
+            if (credentials.password !== "123") {
+              return null;
+            }
+            needsPasswordChange = true;
+          } else {
+            // Sí tiene contraseña, usar bcrypt para comparar
+            const isValid = await bcrypt.compare(credentials.password, user.password);
+            if (!isValid) {
+              return null;
+            }
           }
 
           return {
@@ -49,7 +58,8 @@ export const authOptions: NextAuthOptions = {
             name: user.nombre,
             email: user.correo,
             role: user.rol,
-            campus: user.campus
+            campus: user.campus,
+            needsPasswordChange
           };
 
         } catch (error) {
@@ -64,6 +74,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.campus = user.campus;
+        token.needsPasswordChange = user.needsPasswordChange;
       }
       return token;
     },
@@ -71,6 +82,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.role = token.role as string;
         session.user.campus = token.campus as string;
+        session.user.needsPasswordChange = token.needsPasswordChange as boolean;
       }
       return session;
     }

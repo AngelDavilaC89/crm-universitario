@@ -35,13 +35,47 @@ export class GoogleSheetsService {
       throw new Error("No se encontró la hoja 'Asesores'");
     }
     const rows = await sheet.getRows();
+    const safeGet = (row: any, key: string) => {
+      try {
+        return row.get(key);
+      } catch (e) {
+        return undefined;
+      }
+    };
+
     return rows.map(row => ({
-      correo: row.get('Correo'),
-      nombre: row.get('Nombre'),
-      campus: row.get('Campus'),
-      rol: row.get('Rol'),
-      activo: String(row.get('Activo')).trim().toLowerCase() === 'verdadero' || String(row.get('Activo')).trim().toLowerCase() === 'true' || String(row.get('Activo')).trim().toLowerCase() === 'sí' || String(row.get('Activo')).trim().toLowerCase() === 'si' || String(row.get('Activo')).trim() === '1',
+      correo: safeGet(row, 'Correo'),
+      nombre: safeGet(row, 'Nombre'),
+      campus: safeGet(row, 'Campus'),
+      rol: safeGet(row, 'Rol'),
+      password: safeGet(row, 'Contraseña'), // Columna para la contraseña hasheada
+      activo: String(safeGet(row, 'Activo')).trim().toLowerCase() === 'verdadero' || String(safeGet(row, 'Activo')).trim().toLowerCase() === 'true' || String(safeGet(row, 'Activo')).trim().toLowerCase() === 'sí' || String(safeGet(row, 'Activo')).trim().toLowerCase() === 'si' || String(safeGet(row, 'Activo')).trim() === '1',
     }));
+  }
+
+  // Actualizar la contraseña de un Asesor
+  async updateAsesorPassword(email: string, hashedPassword: string) {
+    await this.init();
+    const sheet = this.doc.sheetsByTitle['Asesores'];
+    if (!sheet) return false;
+
+    await sheet.loadHeaderRow(); // Asegurar que reconoce nuevas columnas
+
+    const rows = await sheet.getRows();
+    const row = rows.find(r => {
+      try {
+        return r.get('Correo')?.trim().toLowerCase() === email.trim().toLowerCase();
+      } catch (e) {
+        return false;
+      }
+    });
+    
+    if (row) {
+      row.set('Contraseña', hashedPassword);
+      await row.save();
+      return true;
+    }
+    return false;
   }
 
   // Ejemplo: Obtener Leads

@@ -17,6 +17,10 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  if (session.user?.needsPasswordChange) {
+    redirect("/update-password");
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       <Sidebar />
