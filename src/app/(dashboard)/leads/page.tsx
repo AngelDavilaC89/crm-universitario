@@ -186,7 +186,7 @@ export default async function LeadsPage({
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredLeads.length > 0 ? (
-                filteredLeads.map((lead: any, idx: number) => (
+                [...filteredLeads].reverse().map((lead: any, idx: number) => (
                   <tr key={idx} className="hover:bg-slate-50/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="font-semibold text-slate-800">{lead.prospecto}</div>
