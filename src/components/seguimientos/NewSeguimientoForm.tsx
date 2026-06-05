@@ -4,7 +4,7 @@ import { useState } from "react";
 import { createSeguimientoAction } from "@/app/actions/seguimientoActions";
 import { Loader2, Plus } from "lucide-react";
 
-export function NewSeguimientoForm({ idLead }: { idLead: string }) {
+export function NewSeguimientoForm({ idLead, currentStatus }: { idLead: string, currentStatus?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -12,6 +12,14 @@ export function NewSeguimientoForm({ idLead }: { idLead: string }) {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (currentStatus && ['Pre-inscrito', 'Inscrito', 'Pendiente Calidad'].includes(currentStatus)) {
+      const confirm = window.confirm("Este lead ya está pre-inscrito o inscrito. ¿Deseas colocar un seguimiento post pre-inscripción?");
+      if (!confirm) {
+        setLoading(false);
+        return;
+      }
+    }
 
     const formData = new FormData(e.currentTarget);
     formData.append("idLead", idLead);
@@ -76,8 +84,12 @@ export function NewSeguimientoForm({ idLead }: { idLead: string }) {
 
         <div className="md:col-span-2 mt-2">
           <label className="block text-xs font-medium text-slate-700 mb-1">Actualizar Estatus del Lead</label>
-          <select name="nuevoEstatus" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 bg-slate-50 font-medium">
-            <option value="En seguimiento">Mantener: En seguimiento</option>
+          <select name="nuevoEstatus" defaultValue={currentStatus || "En seguimiento"} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 bg-slate-50 font-medium">
+            {currentStatus && ['Pre-inscrito', 'Inscrito', 'Pendiente Calidad'].includes(currentStatus) ? (
+              <option value={currentStatus}>Mantener actual: {currentStatus}</option>
+            ) : (
+              <option value="En seguimiento">Mantener: En seguimiento</option>
+            )}
             <option value="Descartado">Mover a: Descartado (Perdido)</option>
           </select>
         </div>

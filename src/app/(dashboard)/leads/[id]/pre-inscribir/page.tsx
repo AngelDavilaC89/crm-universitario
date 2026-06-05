@@ -42,10 +42,11 @@ export default async function PreInscribirPage({ params }: { params: Promise<{ i
   const resolvedParams = await params;
   const idLead = resolvedParams.id;
 
-  const [lead, carreras, turnos] = await Promise.all([
+  const [lead, carreras, turnos, seguimientos] = await Promise.all([
     googleSheets.getLeadById(idLead),
     googleSheets.getCarreras(),
-    googleSheets.getTurnos()
+    googleSheets.getTurnos(),
+    googleSheets.getSeguimientos(idLead)
   ]);
 
   if (!lead) notFound();
@@ -57,8 +58,22 @@ export default async function PreInscribirPage({ params }: { params: Promise<{ i
         Volver al perfil
       </Link>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="bg-blue-600 p-8 text-white">
+      {seguimientos.length === 0 ? (
+        <div className="bg-red-50 rounded-2xl p-8 text-center border border-red-100 shadow-sm">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">⚠️</span>
+          </div>
+          <h2 className="text-xl font-bold text-red-800 mb-2">No es posible pre-inscribir</h2>
+          <p className="text-red-600 mb-6 max-w-md mx-auto">
+            No es posible pre-inscribir sin tener al menos un seguimiento registrado previamente, da de alta el seguimiento que diste al lead para poder pre-inscribir.
+          </p>
+          <Link href={`/leads/${idLead}`} className="inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-6 rounded-xl transition-all shadow-sm">
+            Regresar y agregar seguimiento
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="bg-blue-600 p-8 text-white">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <CheckCircle2 className="w-7 h-7 text-blue-200" />
             Pre-inscribir Prospecto
@@ -163,6 +178,7 @@ export default async function PreInscribirPage({ params }: { params: Promise<{ i
           </div>
         </form>
       </div>
+      )}
     </div>
   );
 }

@@ -128,7 +128,7 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
         {/* Formulario de Nuevo Seguimiento */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <h2 className="text-lg font-bold text-slate-800 mb-4">Registrar Seguimiento</h2>
-          <NewSeguimientoForm idLead={idLead} />
+          <NewSeguimientoForm idLead={idLead} currentStatus={lead.statusLead} />
         </div>
 
         {/* Historial de Seguimientos (Timeline) */}
