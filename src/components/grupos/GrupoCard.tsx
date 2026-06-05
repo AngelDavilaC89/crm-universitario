@@ -132,7 +132,7 @@ export function GrupoCard({ grupo }: { grupo: any }) {
         {/* Barra de Progreso */}
         <div>
           <div className="flex justify-between items-end mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Inscritos</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pre-inscritos</span>
             <span className={`text-lg font-bold ${estaAperturado ? 'text-green-600' : 'text-slate-700'}`}>
               {cantidad} <span className="text-sm font-medium text-slate-400">/ {meta}</span>
             </span>
@@ -147,6 +147,28 @@ export function GrupoCard({ grupo }: { grupo: any }) {
             <p className={`text-xs mt-2 flex items-center gap-1 font-medium ${colors.missingText}`}>
               Faltan {meta - cantidad} alumno(s) para aperturar
             </p>
+          )}
+
+          {/* Mini-panel de métricas (Inscritos reales y Calidad) */}
+          {cantidad > 0 && (
+            <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3">
+              <div className="flex flex-col bg-slate-50 rounded-xl p-3 border border-slate-100/50">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <PhoneCall className="w-3 h-3" /> Llamadas
+                </span>
+                <span className="text-sm font-bold text-slate-700">
+                  {grupo.inscritos.filter((a: any) => a.llamadaCalidad === 'Confirmado' || a.llamadaCalidad === 'Declinó' || a.statusLead === 'Inscrito').length} <span className="text-slate-400 text-xs font-medium">/ {cantidad}</span>
+                </span>
+              </div>
+              <div className="flex flex-col bg-green-50/50 rounded-xl p-3 border border-green-100/50">
+                <span className="text-[10px] font-bold text-green-600/70 uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Inscritos
+                </span>
+                <span className="text-sm font-bold text-green-700">
+                  {grupo.inscritos.filter((a: any) => a.statusLead === 'Inscrito').length} <span className="text-green-600/50 text-xs font-medium">/ {cantidad}</span>
+                </span>
+              </div>
+            </div>
           )}
         </div>
       </div>
