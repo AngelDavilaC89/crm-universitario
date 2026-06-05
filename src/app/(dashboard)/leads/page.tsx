@@ -212,6 +212,8 @@ export default async function LeadsPage({
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold
                         ${lead.statusLead === 'Nuevo lead' || !lead.statusLead ? 'bg-blue-50 text-blue-700 border border-blue-200' : ''}
                         ${lead.statusLead === 'En seguimiento' ? 'bg-orange-50 text-orange-700 border border-orange-200' : ''}
+                        ${lead.statusLead === 'Pre-inscrito' ? 'bg-purple-50 text-purple-700 border border-purple-200' : ''}
+                        ${lead.statusLead === 'Pendiente Calidad' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : ''}
                         ${lead.statusLead === 'Inscrito' ? 'bg-green-50 text-green-700 border border-green-200' : ''}
                         ${lead.statusLead === 'Descartado' ? 'bg-red-50 text-red-700 border border-red-200' : ''}
                       `}>
