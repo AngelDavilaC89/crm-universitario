@@ -158,8 +158,7 @@ export default async function GlobalSeguimientosPage({
             <select
               name="semaforo"
               defaultValue={semaforoFilter}
-              className="w-full sm:w-auto pl-4 pr-10 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-700 bg-white appearance-none cursor-pointer font-medium"
-              onChange={(e) => e.target.form?.submit()}
+              className="w-full sm:w-auto pl-4 pr-10 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-700 bg-white appearance-none font-medium"
             >
               <option value="todos">🚦 Todos los seguimientos</option>
               <option value="rojo">🔴 Urgente (Hoy o Atrasado)</option>
@@ -170,7 +169,9 @@ export default async function GlobalSeguimientosPage({
               <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </div>
           </div>
-          <button type="submit" className="hidden">Buscar</button>
+          <button type="submit" className="px-4 py-2 bg-slate-800 text-white rounded-xl shadow-sm hover:bg-slate-700 transition-colors">
+            Filtrar
+          </button>
         </form>
       </div>
 
