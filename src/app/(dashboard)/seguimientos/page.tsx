@@ -29,15 +29,22 @@ export default async function GlobalSeguimientosPage({
   const semaforoFilter = resolvedParams.semaforo || "todos";
 
   // Función para determinar el color del semáforo
-  const getSemaforoColor = (fechaProximaStr: string | undefined | null) => {
-    if (!fechaProximaStr) return null;
+  const getSemaforoColor = (fechaProximaRaw: any) => {
+    if (!fechaProximaRaw) return null;
     
+    const fechaProximaStr = String(fechaProximaRaw).trim();
+    if (!fechaProximaStr) return null;
+
     let targetDate: Date;
     if (fechaProximaStr.includes('-')) {
       targetDate = new Date(fechaProximaStr + 'T00:00:00');
     } else if (fechaProximaStr.includes('/')) {
       const p = fechaProximaStr.split('/');
-      targetDate = new Date(`${p[2]}-${p[1]}-${p[0]}T00:00:00`);
+      if (p.length === 3) {
+        targetDate = new Date(`${p[2]}-${p[1]}-${p[0]}T00:00:00`);
+      } else {
+        return null;
+      }
     } else {
       return null;
     }
