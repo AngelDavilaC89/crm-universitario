@@ -7,7 +7,7 @@ import Link from "next/link";
 export default async function GlobalSeguimientosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; semaforo?: string }>;
 }) {
   const session = await getServerSession(authOptions);
   if (!session) return null;
@@ -26,6 +26,34 @@ export default async function GlobalSeguimientosPage({
   // Await searchParams
   const resolvedParams = await searchParams;
   const searchQuery = resolvedParams.q?.toLowerCase() || "";
+  const semaforoFilter = resolvedParams.semaforo || "todos";
+
+  // Función para determinar el color del semáforo
+  const getSemaforoColor = (fechaProximaStr: string | undefined | null) => {
+    if (!fechaProximaStr) return null;
+    
+    let targetDate: Date;
+    if (fechaProximaStr.includes('-')) {
+      targetDate = new Date(fechaProximaStr + 'T00:00:00');
+    } else if (fechaProximaStr.includes('/')) {
+      const p = fechaProximaStr.split('/');
+      targetDate = new Date(`${p[2]}-${p[1]}-${p[0]}T00:00:00`);
+    } else {
+      return null;
+    }
+
+    if (isNaN(targetDate.getTime())) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const diffTime = targetDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays <= 0) return 'rojo'; // Hoy o Atrasado
+    if (diffDays <= 2) return 'amarillo'; // Próximos 1 o 2 días
+    return 'verde'; // 3 o más días
+  };
 
   // Filtrar si es asesor o campus
   let seguimientos = todosSeguimientos;
@@ -51,6 +79,14 @@ export default async function GlobalSeguimientosPage({
       ].map(v => String(v).toLowerCase());
       
       return valores.some(v => v.includes(searchQuery));
+    });
+  }
+
+  // Filtrar por Semáforo
+  if (semaforoFilter !== "todos") {
+    seguimientos = seguimientos.filter(seg => {
+      const color = getSemaforoColor(seg.fechaProxima);
+      return color === semaforoFilter;
     });
   }
 
@@ -97,17 +133,37 @@ export default async function GlobalSeguimientosPage({
         </div>
       </div>
 
-      {/* Buscador */}
+      {/* Buscador y Filtros */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <form className="flex w-full md:w-auto relative">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            name="q"
-            defaultValue={searchQuery}
-            placeholder="Buscar en seguimientos..."
-            className="w-full sm:w-80 pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-900"
-          />
+        <form className="flex flex-col sm:flex-row gap-3 w-full relative">
+          <div className="relative flex-1 md:max-w-md">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              name="q"
+              defaultValue={searchQuery}
+              placeholder="Buscar en seguimientos..."
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-900"
+            />
+          </div>
+          
+          <div className="relative">
+            <select
+              name="semaforo"
+              defaultValue={semaforoFilter}
+              className="w-full sm:w-auto pl-4 pr-10 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-700 bg-white appearance-none cursor-pointer font-medium"
+              onChange={(e) => e.target.form?.submit()}
+            >
+              <option value="todos">🚦 Todos los seguimientos</option>
+              <option value="rojo">🔴 Urgente (Hoy o Atrasado)</option>
+              <option value="amarillo">🟡 Próximos (1-2 días)</option>
+              <option value="verde">🟢 A tiempo (3+ días)</option>
+            </select>
+            <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+          </div>
+          <button type="submit" className="hidden">Buscar</button>
         </form>
       </div>
 
@@ -207,12 +263,32 @@ export default async function GlobalSeguimientosPage({
 
                   {/* Próxima Acción */}
                   {seg.proximaAccion && (
-                    <div className="flex items-center justify-between bg-orange-50/80 border border-orange-100 rounded-xl p-3">
-                      <div className="flex items-center text-orange-800 text-sm font-medium">
-                        <Calendar className="w-4 h-4 mr-2 text-orange-500" />
+                    <div className={`flex items-center justify-between border rounded-xl p-3 ${
+                      getSemaforoColor(seg.fechaProxima) === 'rojo' ? 'bg-red-50/80 border-red-100' :
+                      getSemaforoColor(seg.fechaProxima) === 'amarillo' ? 'bg-amber-50/80 border-amber-100' :
+                      getSemaforoColor(seg.fechaProxima) === 'verde' ? 'bg-emerald-50/80 border-emerald-100' :
+                      'bg-slate-50/80 border-slate-100'
+                    }`}>
+                      <div className={`flex items-center text-sm font-medium ${
+                        getSemaforoColor(seg.fechaProxima) === 'rojo' ? 'text-red-800' :
+                        getSemaforoColor(seg.fechaProxima) === 'amarillo' ? 'text-amber-800' :
+                        getSemaforoColor(seg.fechaProxima) === 'verde' ? 'text-emerald-800' :
+                        'text-slate-700'
+                      }`}>
+                        <Calendar className={`w-4 h-4 mr-2 ${
+                          getSemaforoColor(seg.fechaProxima) === 'rojo' ? 'text-red-500' :
+                          getSemaforoColor(seg.fechaProxima) === 'amarillo' ? 'text-amber-500' :
+                          getSemaforoColor(seg.fechaProxima) === 'verde' ? 'text-emerald-500' :
+                          'text-slate-400'
+                        }`} />
                         {seg.proximaAccion}
                       </div>
-                      <span className="text-xs font-bold text-orange-600 bg-white px-2 py-1 rounded-lg shadow-sm">
+                      <span className={`text-xs font-bold px-2 py-1 rounded-lg shadow-sm bg-white ${
+                        getSemaforoColor(seg.fechaProxima) === 'rojo' ? 'text-red-600' :
+                        getSemaforoColor(seg.fechaProxima) === 'amarillo' ? 'text-amber-600' :
+                        getSemaforoColor(seg.fechaProxima) === 'verde' ? 'text-emerald-600' :
+                        'text-slate-500'
+                      }`}>
                         {seg.fechaProxima}
                       </span>
                     </div>
