@@ -6,6 +6,7 @@ import { User, Phone, Mail, MapPin, Calendar, Clock, BookOpen, MessageCircle } f
 import { NewSeguimientoForm } from "@/components/seguimientos/NewSeguimientoForm";
 import { SeguimientoCard } from "@/components/seguimientos/SeguimientoCard";
 import { EditPreInscripcionModal } from "@/components/leads/EditPreInscripcionModal";
+import { EditLeadInfoModal } from "@/components/leads/EditLeadInfoModal";
 import Link from "next/link";
 
 export default async function LeadDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,10 +18,11 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
   const idLead = resolvedParams.id;
 
   // Fetching de datos en paralelo
-  const [lead, seguimientos, carrerasOptions] = await Promise.all([
+  const [lead, seguimientos, carrerasOptions, campusOptions] = await Promise.all([
     googleSheets.getLeadById(idLead),
     googleSheets.getSeguimientos(idLead),
-    googleSheets.getCarreras()
+    googleSheets.getCarreras(),
+    googleSheets.getCampus()
   ]);
 
   if (!lead) {
@@ -34,8 +36,11 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
       <div className="lg:col-span-1 space-y-6">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="bg-slate-50 p-6 border-b border-slate-200">
-            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold mb-4">
-              {(lead.prospecto || "U").charAt(0).toUpperCase()}
+            <div className="flex justify-between items-start mb-4">
+              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold">
+                {(lead.prospecto || "U").charAt(0).toUpperCase()}
+              </div>
+              <EditLeadInfoModal lead={lead} campusOptions={campusOptions} carrerasOptions={carrerasOptions} />
             </div>
             <h2 className="text-xl font-bold text-slate-800">{lead.prospecto || "Lead Sin Nombre"}</h2>
             <p className="text-slate-500 text-sm mt-1 flex items-center gap-1">

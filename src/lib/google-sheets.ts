@@ -378,6 +378,33 @@ export class GoogleSheetsService {
     return false;
   }
 
+  // Actualizar datos de contacto e interés académico del lead
+  async updateLeadInfo(idLead: string, data: any) {
+    await this.init();
+    const sheet = this.doc.sheetsByTitle['Leads'];
+    if (!sheet) return false;
+
+    await sheet.loadHeaderRow();
+    const rows = await sheet.getRows();
+    const row = rows.find(r => r.get('ID Lead') === idLead);
+    
+    if (row) {
+      if (data.celular !== undefined) row.set('Celular', data.celular);
+      if (data.correo !== undefined) row.set('Correo', data.correo);
+      if (data.carrera) row.set('Carrera', data.carrera);
+      if (data.campusInteres) row.set('Campus de Interés', data.campusInteres);
+      if (data.periodoInteres) row.set('Periodo de Interés', data.periodoInteres);
+      if (data.año) row.set('Año', data.año);
+      
+      row.set('Fecha de última actualización', new Date().toLocaleDateString('es-MX'));
+      
+      await row.save();
+      this.invalidateCache('Leads');
+      return true;
+    }
+    return false;
+  }
+
   // Completar Inscripción (Etapa 2 - Guarda colegiatura y resolución)
   async completarInscripcionLead(idLead: string, data: any) {
     await this.init();
