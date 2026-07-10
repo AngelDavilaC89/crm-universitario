@@ -4,6 +4,7 @@ import { googleSheets } from "@/lib/google-sheets";
 import Link from "next/link";
 import { UserPlus, Calendar, Phone, Mail, MapPin, Search, Users } from "lucide-react";
 import { parseSeguimientoDate } from "@/lib/date-utils";
+import { SyncMeridaButton } from "@/components/leads/SyncMeridaButton";
 
 export default async function LeadsPage({
   searchParams,
@@ -161,13 +162,16 @@ export default async function LeadsPage({
         </form>
 
         {["Dirección", "Marketing", "Campus", "Asesor"].includes(role) && (
-          <Link
-            href="/leads/nuevo"
-            className="flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm transition-colors justify-center"
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            Nuevo Lead
-          </Link>
+          <div className="flex items-center gap-3">
+            {campus === 'MD-Mérida' && <SyncMeridaButton />}
+            <Link
+              href="/leads/nuevo"
+              className="flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm transition-colors justify-center"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Nuevo Lead
+            </Link>
+          </div>
         )}
       </div>
 

@@ -90,3 +90,24 @@ export async function updateLeadInfoAction(idLead: string, data: any) {
     return { success: false, error: error.message };
   }
 }
+
+export async function syncMeridaLeadsAction() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user?.campus !== 'MD-Mérida' && !['Dirección', 'Marketing'].includes(session.user?.role || '')) {
+      return { success: false, error: "No tienes permiso para realizar esta acción" };
+    }
+
+    const sheetId = '1f35c8bNSkPRIdV4lij-z4ZFM-etVqjcIOIyt9c2HA2k';
+    const tabName = 'BASE';
+    
+    const count = await googleSheets.syncMeridaLeads(sheetId, tabName);
+    
+    revalidatePath("/leads");
+    return { success: true, count };
+  } catch (error: any) {
+    console.error("Error al sincronizar Mérida:", error);
+    return { success: false, error: error.message };
+  }
+}
+

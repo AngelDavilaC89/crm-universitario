@@ -673,6 +673,80 @@ export class GoogleSheetsService {
     }
     return false;
   }
+
+  // Sincronizar leads de Mérida desde Excel externo (Feria de Becas)
+  async syncMeridaLeads(sheetId: string, tabName: string) {
+    const serviceAccountAuth = new JWT({
+      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    });
+
+    const meridaDoc = new GoogleSpreadsheet(sheetId, serviceAccountAuth);
+    await meridaDoc.loadInfo();
+    const meridaSheet = meridaDoc.sheetsByTitle[tabName];
+    if (!meridaSheet) throw new Error(`No se encontró la pestaña '${tabName}' en el documento de Mérida`);
+
+    const meridaRows = await meridaSheet.getRows();
+
+    await this.init();
+    const mySheet = this.doc.sheetsByTitle['Leads'];
+    if (!mySheet) throw new Error("No se encontró la hoja 'Leads' local");
+    await mySheet.loadHeaderRow();
+    
+    const myRows = await this.getCachedRows('Leads');
+    const existingPhones = new Set(myRows.map(r => String(r.get('Celular') || '').replace(/\D/g, '')));
+
+    let insertedCount = 0;
+
+    for (const mRow of meridaRows) {
+      const telefonoOriginal = mRow.get('TELEFONO') || '';
+      const telefonoLimpio = String(telefonoOriginal).replace(/\D/g, '');
+      
+      // Ignorar si no tiene teléfono o si ya existe (prevención de duplicados)
+      if (!telefonoLimpio || existingPhones.has(telefonoLimpio)) {
+        continue;
+      }
+
+      const preparatoria = mRow.get('PREPARATORIA') || '';
+      const premio = mRow.get('PREMIO') || '';
+      const comentarioOriginal = mRow.get('COMENTARIO') || '';
+
+      const comentarioUnido = [
+        preparatoria ? `Preparatoria: ${preparatoria}` : '',
+        premio ? `Premio: ${premio}` : '',
+        comentarioOriginal ? `Nota: ${comentarioOriginal}` : ''
+      ].filter(Boolean).join(' | ');
+
+      const newId = `L-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const fechaActual = new Date().toLocaleDateString('es-MX');
+
+      await mySheet.addRow({
+        'ID Lead': newId,
+        'Fecha': fechaActual,
+        'Prospecto': mRow.get('NOMBRE') || 'Sin Nombre',
+        'Celular': telefonoOriginal,
+        'Campus de Interés': 'MD-Mérida',
+        'Carrera': mRow.get('LICENCIATURA') || '',
+        'Medio': 'Evento especial',
+        'Etapa': 'Nuevo lead',
+        'Comentario': comentarioUnido,
+        'Fecha de última actualización': fechaActual,
+        'Status Lead': 'Nuevo lead'
+      });
+      
+      existingPhones.add(telefonoLimpio);
+      insertedCount++;
+      // Pequeña pausa de seguridad (rate-limiting google api)
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    if (insertedCount > 0) {
+      this.invalidateCache('Leads');
+    }
+    
+    return insertedCount;
+  }
 }
 
 export const googleSheets = new GoogleSheetsService();
