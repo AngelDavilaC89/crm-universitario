@@ -708,6 +708,12 @@ export class GoogleSheetsService {
     const newRowsToInsert: any[] = [];
 
     for (const mRow of meridaRows) {
+      // Ignorar si la columna CRM no dice "Si"
+      const crmValue = String(mRow.get('CRM') || '').trim().toLowerCase();
+      if (crmValue !== 'si' && crmValue !== 'sí') {
+        continue;
+      }
+
       const telefonoOriginal = mRow.get('TELEFONO') || '';
       const telefonoLimpio = String(telefonoOriginal).replace(/\D/g, '');
       const nombreLimpio = String(mRow.get('NOMBRE') || 'Sin Nombre').trim();
