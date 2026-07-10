@@ -697,16 +697,25 @@ export class GoogleSheetsService {
     await mySheet.loadHeaderRow();
     
     const myRows = await this.getCachedRows('Leads');
-    const existingPhones = new Set(myRows.map(r => String(r.get('Celular') || '').replace(/\D/g, '')));
+    
+    // Crear una llave compuesta de nombre (en minúsculas) y teléfono para evitar duplicados exactos
+    const existingRecords = new Set(myRows.map(r => {
+      const phone = String(r.get('Celular') || '').replace(/\D/g, '');
+      const name = String(r.get('Prospecto') || '').trim().toLowerCase();
+      return `${name}|${phone}`;
+    }));
 
-    let insertedCount = 0;
+    const newRowsToInsert: any[] = [];
 
     for (const mRow of meridaRows) {
       const telefonoOriginal = mRow.get('TELEFONO') || '';
       const telefonoLimpio = String(telefonoOriginal).replace(/\D/g, '');
+      const nombreLimpio = String(mRow.get('NOMBRE') || 'Sin Nombre').trim();
       
-      // Ignorar si no tiene teléfono o si ya existe (prevención de duplicados)
-      if (!telefonoLimpio || existingPhones.has(telefonoLimpio)) {
+      const recordKey = `${nombreLimpio.toLowerCase()}|${telefonoLimpio}`;
+      
+      // Ignorar si ya existe un registro con exactamente el mismo nombre Y el mismo teléfono
+      if (existingRecords.has(recordKey)) {
         continue;
       }
 
@@ -720,10 +729,10 @@ export class GoogleSheetsService {
         comentarioOriginal ? `Nota: ${comentarioOriginal}` : ''
       ].filter(Boolean).join(' | ');
 
-      const newId = `L-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const newId = `L-${Date.now()}-${Math.floor(Math.random() * 1000)}-${newRowsToInsert.length}`;
       const fechaActual = new Date().toLocaleDateString('es-MX');
 
-      await mySheet.addRow({
+      newRowsToInsert.push({
         'ID Lead': newId,
         'Fecha': fechaActual,
         'Prospecto': mRow.get('NOMBRE') || 'Sin Nombre',
@@ -737,17 +746,16 @@ export class GoogleSheetsService {
         'Status Lead': 'Nuevo lead'
       });
       
-      existingPhones.add(telefonoLimpio);
-      insertedCount++;
-      // Pequeña pausa de seguridad (rate-limiting google api)
-      await new Promise(r => setTimeout(r, 200));
+      existingRecords.add(recordKey);
     }
 
-    if (insertedCount > 0) {
+    if (newRowsToInsert.length > 0) {
+      // Inserción masiva para evitar Timeouts en Vercel
+      await mySheet.addRows(newRowsToInsert);
       this.invalidateCache('Leads');
     }
     
-    return insertedCount;
+    return newRowsToInsert.length;
   }
 }
 
