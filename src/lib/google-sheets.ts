@@ -687,6 +687,8 @@ export class GoogleSheetsService {
     const meridaSheet = meridaDoc.sheetsByTitle[tabName];
     if (!meridaSheet) throw new Error(`No se encontró la pestaña '${tabName}' en el documento de Mérida`);
 
+    // Los encabezados están en la fila 3 del excel de la feria de becas
+    await meridaSheet.loadHeaderRow(3);
     const meridaRows = await meridaSheet.getRows();
 
     await this.init();
