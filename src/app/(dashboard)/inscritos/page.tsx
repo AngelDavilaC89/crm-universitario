@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { googleSheets } from "@/lib/google-sheets";
 import { GraduationCap, MapPin, BookOpen, CheckCircle, XCircle, Search } from "lucide-react";
+import { normalizeSearch } from "@/lib/string-utils";
 import { EditInscritoModal } from "@/components/inscritos/EditInscritoModal";
 
 export default async function InscritosPage({
@@ -19,7 +20,8 @@ export default async function InscritosPage({
   const filterYear = resolvedParams.año || "Todos";
   const filterPeriod = resolvedParams.periodo || "Todos";
   const filterCampus = resolvedParams.campus || (role === "Campus" ? userCampus : "Todos");
-  const searchQuery = resolvedParams.q?.toLowerCase() || "";
+  const rawSearchQuery = resolvedParams.q || "";
+  const searchQuery = normalizeSearch(rawSearchQuery);
 
   // Obtener inscritos
   const todosInscritos = await googleSheets.getInscritos();
@@ -40,7 +42,7 @@ export default async function InscritosPage({
     // Búsqueda profunda
     let searchMatch = true;
     if (searchQuery) {
-      const valores = Object.values(inscrito).map(v => String(v).toLowerCase());
+      const valores = Object.values(inscrito).map(v => normalizeSearch(String(v)));
       searchMatch = valores.some(v => v.includes(searchQuery));
     }
 
@@ -64,9 +66,9 @@ export default async function InscritosPage({
             <input
               type="text"
               name="q"
-              defaultValue={searchQuery}
-              placeholder="Buscar en inscritos..."
-              className="w-full sm:w-64 pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none shadow-sm text-slate-900"
+              defaultValue={rawSearchQuery}
+              placeholder="Buscar inscrito..."
+              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none shadow-sm text-slate-900"
             />
           </div>
           {(role === "Dirección" || role === "Marketing") && (

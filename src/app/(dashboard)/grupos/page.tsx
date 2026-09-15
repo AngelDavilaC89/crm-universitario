@@ -1,7 +1,9 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { googleSheets } from "@/lib/google-sheets";
-import { Users, Search } from "lucide-react";
+import { Server, Users, Search, FolderKanban } from "lucide-react";
+import Link from "next/link";
+import { normalizeSearch } from "@/lib/string-utils";
 import { GrupoCard } from "@/components/grupos/GrupoCard";
 
 export default async function GruposPage({
@@ -20,8 +22,9 @@ export default async function GruposPage({
   const inscritos = allLeads.filter(l => l.statusLead === 'Pre-inscrito' || l.statusLead === 'Inscrito');
 
   const resolvedParams = await searchParams;
-  const searchQuery = resolvedParams.q?.toLowerCase() || "";
-  const filterStatus = resolvedParams.status || "Todos";
+  const rawSearchQuery = resolvedParams.q || "";
+  const searchQuery = normalizeSearch(rawSearchQuery);
+  const statusFilter = resolvedParams.status || "Todos";
 
   // Filtrar por campus si es "Campus" o "Asesor"
   let inscritosFiltrados = (role === "Campus" || role === "Asesor") 
@@ -31,7 +34,7 @@ export default async function GruposPage({
   // Búsqueda profunda en los inscritos que formarán los grupos
   if (searchQuery) {
     inscritosFiltrados = inscritosFiltrados.filter(inscrito => {
-      const valores = Object.values(inscrito).map(v => String(v).toLowerCase());
+      const valores = Object.values(inscrito).map(v => normalizeSearch(String(v)));
       return valores.some(v => v.includes(searchQuery));
     });
   }
@@ -77,8 +80,8 @@ export default async function GruposPage({
     return { ...grupo, statusCalculado: statusText };
   });
 
-  if (filterStatus !== "Todos") {
-    gruposModificados = gruposModificados.filter(g => g.statusCalculado === filterStatus.toUpperCase());
+  if (statusFilter !== "Todos") {
+    gruposModificados = gruposModificados.filter(g => g.statusCalculado === statusFilter.toUpperCase());
   }
 
   return (
@@ -97,7 +100,7 @@ export default async function GruposPage({
             <input
               type="text"
               name="q"
-              defaultValue={searchQuery}
+              defaultValue={rawSearchQuery}
               placeholder="Buscar en grupos..."
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-900"
             />
@@ -105,7 +108,7 @@ export default async function GruposPage({
           
           <select 
             name="status" 
-            defaultValue={filterStatus}
+            defaultValue={statusFilter}
             className="w-full sm:w-auto px-4 py-2 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-900"
           >
             <option value="Todos">Todos los Estatus</option>

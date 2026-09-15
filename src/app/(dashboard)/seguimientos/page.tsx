@@ -1,5 +1,7 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { parseSeguimientoDate } from "@/lib/date-utils";
+import { normalizeSearch } from "@/lib/string-utils";
 import { googleSheets } from "@/lib/google-sheets";
 import { MessageSquareText, Phone, Calendar, ArrowRight, User, Mail, Activity, CheckCircle2, AlertCircle, Search } from "lucide-react";
 import Link from "next/link";
@@ -25,7 +27,8 @@ export default async function GlobalSeguimientosPage({
 
   // Await searchParams
   const resolvedParams = await searchParams;
-  const searchQuery = resolvedParams.q?.toLowerCase() || "";
+  const rawSearchQuery = resolvedParams.q || "";
+  const searchQuery = normalizeSearch(rawSearchQuery);
   const semaforoFilter = resolvedParams.semaforo || "todos";
 
   // Función para determinar el color del semáforo
@@ -75,16 +78,11 @@ export default async function GlobalSeguimientosPage({
 
   // Filtrar por búsqueda profunda
   if (searchQuery) {
-    seguimientos = seguimientos.filter(seg => {
-      const leadInfo = leadsMap.get(seg.idLead);
-      const valores = [
-        ...Object.values(seg),
-        leadInfo?.prospecto || "",
-        leadInfo?.campusInteres || "",
-        leadInfo?.carrera || "",
-        leadInfo?.turno || ""
-      ].map(v => String(v).toLowerCase());
+    seguimientos = seguimientos.filter(s => {
+      const parentLead = leadsMap.get(s.idLead);
+      const combinedData = { ...s, ...parentLead };
       
+      const valores = Object.values(combinedData).map(v => normalizeSearch(String(v)));
       return valores.some(v => v.includes(searchQuery));
     });
   }
@@ -148,7 +146,7 @@ export default async function GlobalSeguimientosPage({
             <input
               type="text"
               name="q"
-              defaultValue={searchQuery}
+              defaultValue={rawSearchQuery}
               placeholder="Buscar en seguimientos..."
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm text-slate-900"
             />

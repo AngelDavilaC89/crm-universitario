@@ -5,6 +5,7 @@ import { Users, Search, Frown } from "lucide-react";
 import Link from "next/link";
 import { AccionRecuperacionForm } from "@/components/bajas/AccionRecuperacionForm";
 import { parseSeguimientoDate } from "@/lib/date-utils";
+import { normalizeSearch } from "@/lib/string-utils";
 import { BajasChart } from "@/components/bajas/BajasChart";
 
 export default async function BajasPage({
@@ -39,7 +40,8 @@ export default async function BajasPage({
   // Extraer campus únicos para el select
   const uniqueCampuses = Array.from(new Set(allLeads.map(l => l.campusInteres).filter(Boolean))).sort();
 
-  const searchQuery = resolvedParams.q?.toLowerCase() || "";
+  const rawSearchQuery = resolvedParams.q || "";
+  const searchQuery = normalizeSearch(rawSearchQuery);
   const mesQuery = resolvedParams.mes || ""; // Format: YYYY-MM
 
   if (mesQuery) {
@@ -57,7 +59,7 @@ export default async function BajasPage({
 
   if (searchQuery) {
     bajas = bajas.filter(l => {
-      const valores = Object.values(l).map(v => String(v).toLowerCase());
+      const valores = Object.values(l).map(v => normalizeSearch(String(v)));
       return valores.some(v => v.includes(searchQuery));
     });
   }
@@ -81,7 +83,7 @@ export default async function BajasPage({
             <input
               type="text"
               name="q"
-              defaultValue={searchQuery}
+              defaultValue={rawSearchQuery}
               placeholder="Buscar baja..."
               className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none shadow-sm text-slate-900"
             />
