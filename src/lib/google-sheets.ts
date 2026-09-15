@@ -392,12 +392,14 @@ export class GoogleSheetsService {
     const row = rows.find(r => r.get('ID Lead') === idLead);
     
     if (row) {
+      if (data.prospecto !== undefined) row.set('Prospecto', data.prospecto);
       if (data.celular !== undefined) row.set('Celular', data.celular);
       if (data.correo !== undefined) row.set('Correo', data.correo);
       if (data.carrera) row.set('Carrera', data.carrera);
       if (data.campusInteres) row.set('Campus de Interés', data.campusInteres);
       if (data.periodoInteres) row.set('Periodo de Interés', data.periodoInteres);
       if (data.año) row.set('Año', data.año);
+      if (data.modalidad) row.set('Modalidad', data.modalidad);
       
       row.set('Fecha de última actualización', new Date().toLocaleDateString('es-MX'));
       

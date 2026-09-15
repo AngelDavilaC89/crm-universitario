@@ -18,11 +18,12 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
   const idLead = resolvedParams.id;
 
   // Fetching de datos en paralelo
-  const [lead, seguimientos, carrerasOptions, campusOptions] = await Promise.all([
+  const [lead, seguimientos, carrerasOptions, campusOptions, modalidadesOptions] = await Promise.all([
     googleSheets.getLeadById(idLead),
     googleSheets.getSeguimientos(idLead),
     googleSheets.getCarreras(),
-    googleSheets.getCampus()
+    googleSheets.getCampus(),
+    googleSheets.getModalidades()
   ]);
 
   if (!lead) {
@@ -40,7 +41,7 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
               <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold">
                 {(lead.prospecto || "U").charAt(0).toUpperCase()}
               </div>
-              <EditLeadInfoModal lead={lead} campusOptions={campusOptions} carrerasOptions={carrerasOptions} />
+              <EditLeadInfoModal lead={lead} campusOptions={campusOptions} carrerasOptions={carrerasOptions} modalidadesOptions={modalidadesOptions} />
             </div>
             <h2 className="text-xl font-bold text-slate-800">{lead.prospecto || "Lead Sin Nombre"}</h2>
             <p className="text-slate-500 text-sm mt-1 flex items-center gap-1">

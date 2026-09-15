@@ -7,23 +7,27 @@ import { Loader2, Pencil, X } from "lucide-react";
 export function EditLeadInfoModal({ 
   lead,
   campusOptions,
-  carrerasOptions
+  carrerasOptions,
+  modalidadesOptions
 }: { 
   lead: any;
   campusOptions: string[];
   carrerasOptions: string[];
+  modalidadesOptions: string[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
+    prospecto: lead.prospecto || "",
     celular: lead.celular || "",
     correo: lead.correo || "",
     carrera: lead.carrera || "",
     campusInteres: lead.campusInteres || "",
     periodoInteres: lead.periodoInteres || "",
     año: lead.año || new Date().getFullYear().toString(),
+    modalidad: lead.modalidad || "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -77,6 +81,18 @@ export function EditLeadInfoModal({
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Nombre del Prospecto *</label>
+                  <input 
+                    type="text" 
+                    name="prospecto"
+                    required
+                    value={formData.prospecto}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1.5">Teléfono / Celular *</label>
                   <input 
@@ -112,6 +128,22 @@ export function EditLeadInfoModal({
                     <option value="">Selecciona un campus...</option>
                     {campusOptions.map((c, i) => (
                       <option key={i} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Modalidad *</label>
+                  <select 
+                    name="modalidad"
+                    required
+                    value={formData.modalidad}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-slate-900 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none"
+                  >
+                    <option value="">Selecciona modalidad...</option>
+                    {modalidadesOptions.map((m, i) => (
+                      <option key={i} value={m}>{m}</option>
                     ))}
                   </select>
                 </div>
