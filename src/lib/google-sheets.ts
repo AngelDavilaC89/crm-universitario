@@ -834,7 +834,8 @@ export class GoogleSheetsService {
     await mySheet.loadHeaderRow();
     
     // 1. OBLIGAR a refrescar la memoria para tener la base de datos 100% actualizada
-    const myRows = await this.getCachedRows('Leads', true);
+    this.invalidateCache('Leads');
+    const myRows = await this.getCachedRows('Leads');
     
     // Set para evitar duplicados (mismo nombre y teléfono)
     const existingRecords = new Set(myRows.map(r => {
