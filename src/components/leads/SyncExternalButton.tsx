@@ -50,6 +50,10 @@ export function SyncExternalButton({ campusId }: { campusId: string }) {
       if (response.ok && data.success) {
         setStatus("success");
         setMessage(data.message || `Importados exitosamente`);
+        
+        // Lanzar una alerta nativa para que sea súper visible
+        window.alert(data.message || `Importados exitosamente`);
+        
         // Refrescar la página para ver los nuevos leads
         router.refresh();
         setTimeout(() => setStatus("idle"), 5000);
@@ -81,7 +85,7 @@ export function SyncExternalButton({ campusId }: { campusId: string }) {
     return (
       <div className="flex items-center px-4 py-2 bg-green-50 text-green-700 font-medium rounded-xl border border-green-200 text-sm">
         <Check className="w-4 h-4 mr-2 flex-shrink-0" />
-        <span className="truncate max-w-[200px]">{message}</span>
+        <span>{message}</span>
       </div>
     );
   }
