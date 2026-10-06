@@ -6,6 +6,7 @@ import { UserPlus, Calendar, Phone, Mail, MapPin, Search, Users } from "lucide-r
 import { parseSeguimientoDate } from "@/lib/date-utils";
 import { normalizeSearch } from "@/lib/string-utils";
 import { SyncMeridaButton } from "@/components/leads/SyncMeridaButton";
+import { SyncExternalButton } from "@/components/leads/SyncExternalButton";
 
 export default async function LeadsPage({
   searchParams,
@@ -166,6 +167,7 @@ export default async function LeadsPage({
         {["Dirección", "Marketing", "Campus", "Asesor"].includes(role) && (
           <div className="flex items-center gap-3">
             {campus === 'MD-Mérida' && <SyncMeridaButton />}
+            <SyncExternalButton campusId={campus} />
             <Link
               href="/leads/nuevo"
               className="flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 shadow-sm transition-colors justify-center"

@@ -789,6 +789,157 @@ export class GoogleSheetsService {
     }
     return false;
   }
+
+  // Alternativa 2: Extraer leads directamente desde un archivo .XLSX en Google Drive
+  async syncExternalExcelLeads(
+    fileId: string, 
+    sheetName: string, 
+    campusId: string,
+    colMap: { prospecto: string, celular: string, correo?: string, carrera?: string, comentario?: string }
+  ) {
+    // Importamos dinámicamente para no romper el cliente
+    const { google } = await import('googleapis');
+    const XLSX = await import('xlsx');
+
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      },
+      scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+    });
+
+    const drive = google.drive({ version: 'v3', auth });
+
+    // Descargar el Excel crudo
+    const response = await drive.files.get(
+      { fileId, alt: 'media' },
+      { responseType: 'arraybuffer' }
+    );
+
+    const buffer = Buffer.from(response.data as ArrayBuffer);
+    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    
+    // Obtener la pestaña (o la primera si no se encuentra el nombre exacto)
+    const worksheet = workbook.Sheets[sheetName] || workbook.Sheets[workbook.SheetNames[0]];
+    if (!worksheet) throw new Error(`No se encontró la pestaña en el Excel`);
+
+    // Convertir a JSON usando raw: true para evitar notación científica
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true }) as any[][];
+
+    // Inicializamos CRM central
+    await this.init();
+    const mySheet = this.doc.sheetsByTitle['Leads'];
+    if (!mySheet) throw new Error("No se encontró la hoja 'Leads' local");
+    await mySheet.loadHeaderRow();
+    const myRows = await this.getCachedRows('Leads');
+    
+    // Set para evitar duplicados (mismo nombre y teléfono)
+    const existingRecords = new Set(myRows.map(r => {
+      const phone = String(r.get('Celular') || '').replace(/\D/g, '');
+      const name = String(r.get('Prospecto') || '').trim().toLowerCase();
+      return `${name}|${phone}`;
+    }));
+
+    const newRowsToInsert: any[] = [];
+    const fechaActual = new Date().toLocaleDateString('es-MX');
+
+    // Empezamos desde la fila 1 (ignorando la 0 que son los encabezados)
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row || row.length === 0) continue;
+
+      // ColMap ahora recibe índices (0 = A, 1 = B, 2 = C...)
+      const prospecto = String(row[Number(colMap.prospecto)] || '').trim();
+      
+      // Convertir explícitamente el celular de Number a String (evita que raw: false nos traiga 5.28E+11)
+      const celularRaw = row[Number(colMap.celular)];
+      let celularOriginal = celularRaw ? String(celularRaw).trim() : '';
+      
+      // Si el parser lo trajo como notación científica a pesar de todo (ej. por ser un string en excel), lo limpiamos
+      if (celularOriginal.includes('E+')) {
+        celularOriginal = Number(celularRaw).toLocaleString('fullwide', {useGrouping:false});
+      }
+      
+      const celularLimpio = celularOriginal.replace(/\D/g, '');
+      
+      if (!prospecto || !celularOriginal) continue;
+
+      // Filtro de fecha: Solo traemos los de Octubre 2026
+      const fechaCell = row[0];
+      let isOctober2026 = false;
+      let fechaFinalString = fechaActual;
+
+      if (fechaCell instanceof Date) {
+        if (!isNaN(fechaCell.getTime()) && fechaCell.getMonth() === 9 && fechaCell.getFullYear() === 2026) {
+          isOctober2026 = true;
+          fechaFinalString = `${fechaCell.getDate()}/${fechaCell.getMonth() + 1}/${fechaCell.getFullYear()}`;
+        }
+      } else if (typeof fechaCell === 'number') {
+        // Convertir numero serial de Excel a JS Date
+        const dateObj = new Date(Math.round((fechaCell - 25569) * 86400 * 1000));
+        if (!isNaN(dateObj.getTime()) && dateObj.getMonth() === 9 && dateObj.getFullYear() === 2026) {
+          isOctober2026 = true;
+          fechaFinalString = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
+        }
+      } else if (typeof fechaCell === 'string') {
+        const fechaCruda = fechaCell.trim();
+        const dateObj = new Date(fechaCruda);
+        if (!isNaN(dateObj.getTime())) {
+          if (dateObj.getMonth() === 9 && dateObj.getFullYear() === 2026) {
+             isOctober2026 = true;
+             fechaFinalString = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
+          }
+        } else {
+          if (fechaCruda.startsWith('10/') && (fechaCruda.endsWith('/26') || fechaCruda.endsWith('/2026'))) {
+            isOctober2026 = true;
+            const parts = fechaCruda.split('/');
+            fechaFinalString = `${parts[1]}/10/2026`;
+          }
+        }
+      }
+
+      // Si no es de octubre 2026, lo ignoramos
+      if (!isOctober2026) continue;
+
+      const recordKey = `${prospecto.toLowerCase()}|${celularLimpio}`;
+      if (existingRecords.has(recordKey)) continue; // Ya existe
+
+      const correo = colMap.correo !== undefined ? String(row[Number(colMap.correo)] || '').trim() : '';
+      const carrera = colMap.carrera !== undefined ? String(row[Number(colMap.carrera)] || '').trim() : '';
+      const comentario = colMap.comentario !== undefined ? String(row[Number(colMap.comentario)] || '').trim() : 'Lead de Excel';
+
+      const newId = `L-${Date.now()}-${Math.floor(Math.random() * 1000)}-${newRowsToInsert.length}`;
+
+      newRowsToInsert.push({
+        'ID Lead': newId,
+        'Fecha': fechaFinalString,
+        'Prospecto': prospecto,
+        'Celular': celularOriginal,
+        'Correo': correo,
+        'Campus de Interés': campusId,
+        'Carrera': carrera,
+        'Modalidad': 'Presencial',
+        'Turno': '',
+        'Periodo de Interés': '',
+        'Año': new Date().getFullYear().toString(),
+        'Medio': 'Redes Sociales',
+        'Etapa': 'Nuevo lead',
+        'Comentario': comentario,
+        'Fecha de última actualización': fechaActual,
+        'Status Lead': 'Nuevo lead'
+      });
+      
+      existingRecords.add(recordKey);
+    }
+
+    if (newRowsToInsert.length > 0) {
+      await mySheet.addRows(newRowsToInsert);
+      this.invalidateCache('Leads');
+    }
+    
+    return newRowsToInsert.length;
+  }
 }
 
 export const googleSheets = new GoogleSheetsService();
