@@ -832,7 +832,9 @@ export class GoogleSheetsService {
     const mySheet = this.doc.sheetsByTitle['Leads'];
     if (!mySheet) throw new Error("No se encontró la hoja 'Leads' local");
     await mySheet.loadHeaderRow();
-    const myRows = await this.getCachedRows('Leads');
+    
+    // 1. OBLIGAR a refrescar la memoria para tener la base de datos 100% actualizada
+    const myRows = await this.getCachedRows('Leads', true);
     
     // Set para evitar duplicados (mismo nombre y teléfono)
     const existingRecords = new Set(myRows.map(r => {
@@ -903,7 +905,10 @@ export class GoogleSheetsService {
       if (!isOctober2026) continue;
 
       const recordKey = `${prospecto.toLowerCase()}|${celularLimpio}`;
-      if (existingRecords.has(recordKey)) continue; // Ya existe
+      if (existingRecords.has(recordKey)) continue; // Ya existe en CRM o en las filas de este mismo Excel
+
+      // 2. Agregarlo a la memoria temporal para no insertar duplicados si vienen 2 iguales en el mismo archivo
+      existingRecords.add(recordKey);
 
       const correo = colMap.correo !== undefined ? String(row[Number(colMap.correo)] || '').trim() : '';
       const carrera = colMap.carrera !== undefined ? String(row[Number(colMap.carrera)] || '').trim() : '';
