@@ -847,9 +847,24 @@ export class GoogleSheetsService {
     const newRowsToInsert: any[] = [];
     const fechaActual = new Date().toLocaleDateString('es-MX');
 
-    // Empezamos desde la fila 1 (ignorando la 0 que son los encabezados)
+    // Identificar solo las filas con datos (evita filas vacías al final de Excel)
+    const validRows: { r: number; row: any[] }[] = [];
     for (let i = 1; i < data.length; i++) {
-      const row = data[i];
+      if (data[i] && (data[i][Number(colMap.prospecto)] || data[i][1])) {
+        validRows.push({ r: i, row: data[i] });
+      }
+    }
+
+    // Escanear únicamente el bloque reciente del archivo (últimas 250 filas con datos)
+    // para evitar que fechas ambiguas de meses anteriores (ej. 10/03/26) se confundan con el mes actual
+    const recentRows = validRows.slice(-250);
+
+    const now = new Date();
+    const targetMonth = now.getMonth() + 1; // 10 para Octubre
+    const targetYear = now.getFullYear();   // 2026
+
+    for (const item of recentRows) {
+      const row = item.row;
       if (!row || row.length === 0) continue;
 
       // ColMap ahora recibe índices (0 = A, 1 = B, 2 = C...)
@@ -866,50 +881,61 @@ export class GoogleSheetsService {
       
       const celularLimpio = celularOriginal.replace(/\D/g, '');
       
-      if (!prospecto || !celularOriginal) continue;
+      if (!prospecto || !celularOriginal || celularOriginal === 'NA' || celularOriginal === '#ERROR!') continue;
 
-      // Filtro de fecha: Solo traemos los de Octubre 2026
-      const cellRef = XLSX.utils.encode_cell({ r: i, c: 0 });
+      // Normalización inteligente de fechas (detecta M/D/Y vs D/M/Y)
+      const cellRef = XLSX.utils.encode_cell({ r: item.r, c: 0 });
       const cellFormatted = worksheet[cellRef]?.w;
-      const fechaCell = cellFormatted || row[0];
-      let isOctober2026 = false;
+      const rawCell = row[0];
+
+      let isCurrentMonth = false;
       let fechaFinalString = fechaActual;
 
-      if (fechaCell instanceof Date) {
-        if (!isNaN(fechaCell.getTime()) && fechaCell.getMonth() === 9 && fechaCell.getFullYear() === 2026) {
-          isOctober2026 = true;
-          fechaFinalString = `${fechaCell.getDate()}/${fechaCell.getMonth() + 1}/${fechaCell.getFullYear()}`;
-        }
-      } else if (typeof fechaCell === 'number') {
-        // Convertir numero serial de Excel a JS Date
-        const dateObj = new Date(Math.round((fechaCell - 25569) * 86400 * 1000));
-        if (!isNaN(dateObj.getTime()) && dateObj.getMonth() === 9 && dateObj.getFullYear() === 2026) {
-          isOctober2026 = true;
-          fechaFinalString = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
-        }
-      } else if (typeof fechaCell === 'string') {
-        const fechaCruda = fechaCell.trim();
-        if (fechaCruda.startsWith('10/') && (fechaCruda.endsWith('/26') || fechaCruda.endsWith('/2026'))) {
-          isOctober2026 = true;
-          const parts = fechaCruda.split('/');
-          fechaFinalString = `${parts[1]}/10/2026`;
-        } else if (fechaCruda.endsWith('/10/26') || fechaCruda.endsWith('/10/2026')) {
-          isOctober2026 = true;
-          const parts = fechaCruda.split('/');
-          fechaFinalString = `${parts[0]}/10/2026`;
-        } else {
-          const dateObj = new Date(fechaCruda);
-          if (!isNaN(dateObj.getTime())) {
-            if (dateObj.getMonth() === 9 && dateObj.getFullYear() === 2026) {
-              isOctober2026 = true;
-              fechaFinalString = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
+      // 1. Priorizar formato de texto (para manejar 3/10/26 vs 10/14/26)
+      const fechaStr = cellFormatted || (typeof rawCell === 'string' ? rawCell : null);
+      if (fechaStr && typeof fechaStr === 'string') {
+        const parts = fechaStr.trim().split(/[\/\-]/).map((p: string) => p.trim());
+        if (parts.length === 3) {
+          const y = parseInt(parts[2]);
+          if (y === (targetYear % 100) || y === targetYear) {
+            const n0 = parseInt(parts[0]);
+            const n1 = parseInt(parts[1]);
+            let day = null;
+            // Si el primer número es el mes objetivo (M/D/Y)
+            if (n0 === targetMonth && n1 >= 1 && n1 <= 31) {
+              day = n1;
+            }
+            // Si el segundo número es el mes objetivo (D/M/Y)
+            else if (n1 === targetMonth && n0 >= 1 && n0 <= 31) {
+              day = n0;
+            }
+            if (day !== null) {
+              isCurrentMonth = true;
+              fechaFinalString = `${day}/${targetMonth}/${targetYear}`;
             }
           }
         }
       }
 
-      // Si no es de octubre 2026, lo ignoramos
-      if (!isOctober2026) continue;
+      // 2. Si es número serial de Excel
+      if (!isCurrentMonth && typeof rawCell === 'number') {
+        const dt = new Date(Math.round((rawCell - 25569) * 86400 * 1000));
+        if (!isNaN(dt.getTime()) && dt.getFullYear() === targetYear && dt.getMonth() === (targetMonth - 1)) {
+          isCurrentMonth = true;
+          fechaFinalString = `${dt.getDate()}/${targetMonth}/${targetYear}`;
+        }
+      }
+
+      // 3. Si es objeto Date
+      if (!isCurrentMonth && rawCell instanceof Date && !isNaN(rawCell.getTime())) {
+        if (rawCell.getFullYear() === targetYear && rawCell.getMonth() === (targetMonth - 1)) {
+          isCurrentMonth = true;
+          fechaFinalString = `${rawCell.getDate()}/${targetMonth}/${targetYear}`;
+        }
+      }
+
+      // Si no es del mes actual, lo ignoramos
+      if (!isCurrentMonth) continue;
 
       const recordKey = `${prospecto.toLowerCase()}|${celularLimpio}`;
       if (existingRecords.has(recordKey)) continue; // Ya existe en CRM o en las filas de este mismo Excel
