@@ -847,24 +847,53 @@ export class GoogleSheetsService {
     const newRowsToInsert: any[] = [];
     const fechaActual = new Date().toLocaleDateString('es-MX');
 
-    // Identificar solo las filas con datos (evita filas vacías al final de Excel)
-    const validRows: { r: number; row: any[] }[] = [];
-    for (let i = 1; i < data.length; i++) {
-      if (data[i] && (data[i][Number(colMap.prospecto)] || data[i][1])) {
-        validRows.push({ r: i, row: data[i] });
+    // 1. Encontrar la última fila con datos reales
+    let lastRow = -1;
+    for (let r = data.length - 1; r >= 1; r--) {
+      if (data[r] && (data[r][0] || data[r][1])) {
+        lastRow = r;
+        break;
       }
     }
 
-    // Escanear únicamente el bloque reciente del archivo (últimas 250 filas con datos)
-    // para evitar que fechas ambiguas de meses anteriores (ej. 10/03/26) se confundan con el mes actual
-    const recentRows = validRows.slice(-250);
+    if (lastRow === -1) {
+      return { success: true, message: "No se encontraron filas con datos", inserted: 0 };
+    }
+
+    // 2. Encontrar el corte exacto de fin de Septiembre para aislar el bloque de Octubre y jamás tocar Agosto
+    let octoberStartIndex = 1;
+    for (let r = lastRow; r >= 1; r--) {
+      const cellRef = XLSX.utils.encode_cell({ r, c: 0 });
+      const raw = data[r]?.[0];
+      const fmt = worksheet[cellRef]?.w;
+      const str = String(fmt || raw || '').trim();
+
+      const parts = str.split(/[\/\-]/).map(p => parseInt(p.trim()));
+      let isEndOfSept = false;
+      if (parts.length === 3) {
+        if ((parts[0] === 9 && parts[1] >= 28 && parts[1] <= 31) || (parts[1] === 9 && parts[0] >= 28 && parts[0] <= 31)) {
+          isEndOfSept = true;
+        }
+      } else if (typeof raw === 'number') {
+        const dt = new Date(Math.round((raw - 25569) * 86400 * 1000));
+        if (dt.getFullYear() === 2026 && dt.getMonth() === 8 && dt.getDate() >= 28) {
+          isEndOfSept = true;
+        }
+      }
+
+      if (isEndOfSept) {
+        octoberStartIndex = r + 1;
+        break;
+      }
+    }
 
     const now = new Date();
     const targetMonth = now.getMonth() + 1; // 10 para Octubre
     const targetYear = now.getFullYear();   // 2026
 
-    for (const item of recentRows) {
-      const row = item.row;
+    for (let i = octoberStartIndex; i <= lastRow; i++) {
+      const row = data[i];
+      const cellRef = XLSX.utils.encode_cell({ r: i, c: 0 });
       if (!row || row.length === 0) continue;
 
       // ColMap ahora recibe índices (0 = A, 1 = B, 2 = C...)
