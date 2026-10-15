@@ -869,7 +869,9 @@ export class GoogleSheetsService {
       if (!prospecto || !celularOriginal) continue;
 
       // Filtro de fecha: Solo traemos los de Octubre 2026
-      const fechaCell = row[0];
+      const cellRef = XLSX.utils.encode_cell({ r: i, c: 0 });
+      const cellFormatted = worksheet[cellRef]?.w;
+      const fechaCell = cellFormatted || row[0];
       let isOctober2026 = false;
       let fechaFinalString = fechaActual;
 
@@ -887,17 +889,17 @@ export class GoogleSheetsService {
         }
       } else if (typeof fechaCell === 'string') {
         const fechaCruda = fechaCell.trim();
-        const dateObj = new Date(fechaCruda);
-        if (!isNaN(dateObj.getTime())) {
-          if (dateObj.getMonth() === 9 && dateObj.getFullYear() === 2026) {
-             isOctober2026 = true;
-             fechaFinalString = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
-          }
+        if (fechaCruda.startsWith('10/') && (fechaCruda.endsWith('/26') || fechaCruda.endsWith('/2026'))) {
+          isOctober2026 = true;
+          const parts = fechaCruda.split('/');
+          fechaFinalString = `${parts[1]}/10/2026`;
         } else {
-          if (fechaCruda.startsWith('10/') && (fechaCruda.endsWith('/26') || fechaCruda.endsWith('/2026'))) {
-            isOctober2026 = true;
-            const parts = fechaCruda.split('/');
-            fechaFinalString = `${parts[1]}/10/2026`;
+          const dateObj = new Date(fechaCruda);
+          if (!isNaN(dateObj.getTime())) {
+            if (dateObj.getMonth() === 9 && dateObj.getFullYear() === 2026) {
+              isOctober2026 = true;
+              fechaFinalString = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
+            }
           }
         }
       }

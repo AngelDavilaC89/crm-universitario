@@ -23,8 +23,19 @@ export function SyncExternalButton({ campusId }: { campusId: string }) {
         carrera: '5',
         comentario: '10'
       }
+    },
+    'MM-Montemorelos': {
+      fileId: '1STilwMVlvwvkOTSXPNiB4s1uTCZskgAL',
+      sheetName: 'Brenda Caballero',
+      campusId: 'MM-Montemorelos',
+      colMap: {
+        prospecto: '1',
+        celular: '2',
+        correo: '3',
+        carrera: '5',
+        comentario: '11'
+      }
     }
-    // Aquí puedes agregar más campus en el futuro
   };
 
   const handleSync = async () => {
