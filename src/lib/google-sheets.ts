@@ -893,6 +893,10 @@ export class GoogleSheetsService {
           isOctober2026 = true;
           const parts = fechaCruda.split('/');
           fechaFinalString = `${parts[1]}/10/2026`;
+        } else if (fechaCruda.endsWith('/10/26') || fechaCruda.endsWith('/10/2026')) {
+          isOctober2026 = true;
+          const parts = fechaCruda.split('/');
+          fechaFinalString = `${parts[0]}/10/2026`;
         } else {
           const dateObj = new Date(fechaCruda);
           if (!isNaN(dateObj.getTime())) {

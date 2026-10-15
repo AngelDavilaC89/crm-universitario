@@ -35,6 +35,18 @@ export function SyncExternalButton({ campusId }: { campusId: string }) {
         carrera: '5',
         comentario: '11'
       }
+    },
+    'PM-Padre Mier': {
+      fileId: '1Y4I6ranofhzrVTcXfReNVta4_YbuGmQO',
+      sheetName: 'KAREN VILLARREAL',
+      campusId: 'PM-Padre Mier',
+      colMap: {
+        prospecto: '1',
+        celular: '2',
+        correo: '3',
+        carrera: '5',
+        comentario: '11'
+      }
     }
   };
 
