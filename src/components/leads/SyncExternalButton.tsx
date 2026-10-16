@@ -52,6 +52,19 @@ export function SyncExternalButton({ campusId }: { campusId: string }) {
         carrera: '5',
         comentario: '11'
       }
+    },
+    'ST-Santiago': {
+      fileId: '11oWyQyOlCtqSKr5xFQqf1f0TqZp-hicq',
+      sheetName: 'Janeth Villalon',
+      campusId: 'ST-Santiago',
+      label: 'Santiago',
+      colMap: {
+        prospecto: '1',
+        celular: '2',
+        correo: '3',
+        carrera: '5',
+        comentario: '10'
+      }
     }
   };
 
@@ -129,7 +142,8 @@ export function SyncExternalButton({ campusId }: { campusId: string }) {
     }
   };
 
-  const isSpecificCampus = Boolean(campusConfigs[campusId]);
+  const activeConfig = campusConfigs[campusId] || (campusId === 'STG-Santiago' ? campusConfigs['ST-Santiago'] : null);
+  const isSpecificCampus = Boolean(activeConfig);
 
   return (
     <>
@@ -175,9 +189,9 @@ export function SyncExternalButton({ campusId }: { campusId: string }) {
         </div>
       ) : isSpecificCampus ? (
         <button
-          onClick={() => triggerSyncForConfig(campusConfigs[campusId])}
+          onClick={() => triggerSyncForConfig(activeConfig)}
           className="flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 font-medium rounded-xl hover:bg-indigo-100 border border-indigo-200 transition-colors shadow-sm"
-          title={`Sincronizar Leads de ${campusConfigs[campusId]?.label}`}
+          title={`Sincronizar Leads de ${activeConfig?.label}`}
         >
           <RefreshCcw className="w-4 h-4 mr-2" />
           Refrescar Leads
