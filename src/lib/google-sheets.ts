@@ -837,11 +837,22 @@ export class GoogleSheetsService {
     this.invalidateCache('Leads');
     const myRows = await this.getCachedRows('Leads');
     
-    // Set para evitar duplicados (mismo nombre y teléfono)
+    const cleanPhone = (val: any) => {
+      const d = String(val || '').replace(/\D/g, '');
+      return d.length >= 10 ? d.slice(-10) : d;
+    };
+    const cleanName = (val: any) => {
+      return String(val || '')
+        .trim()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, ' ');
+    };
+
+    // Set para evitar duplicados (mismo nombre y teléfono normalizados)
     const existingRecords = new Set(myRows.map(r => {
-      const phone = String(r.get('Celular') || '').replace(/\D/g, '');
-      const name = String(r.get('Prospecto') || '').trim().toLowerCase();
-      return `${name}|${phone}`;
+      return `${cleanName(r.get('Prospecto'))}|${cleanPhone(r.get('Celular'))}`;
     }));
 
     const newRowsToInsert: any[] = [];
@@ -975,7 +986,7 @@ export class GoogleSheetsService {
       // Si no es del mes actual, lo ignoramos
       if (!isCurrentMonth) continue;
 
-      const recordKey = `${prospecto.toLowerCase()}|${celularLimpio}`;
+      const recordKey = `${cleanName(prospecto)}|${cleanPhone(celularLimpio)}`;
       if (existingRecords.has(recordKey)) continue; // Ya existe en CRM o en las filas de este mismo Excel
 
       // 2. Agregarlo a la memoria temporal para no insertar duplicados si vienen 2 iguales en el mismo archivo
