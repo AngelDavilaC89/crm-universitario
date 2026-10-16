@@ -913,7 +913,6 @@ export class GoogleSheetsService {
       if (!prospecto || !celularOriginal || celularOriginal === 'NA' || celularOriginal === '#ERROR!') continue;
 
       // Normalización inteligente de fechas (detecta M/D/Y vs D/M/Y)
-      const cellRef = XLSX.utils.encode_cell({ r: item.r, c: 0 });
       const cellFormatted = worksheet[cellRef]?.w;
       const rawCell = row[0];
 
